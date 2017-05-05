@@ -1,0 +1,84 @@
+<h1>Galaxy outside Kubernetes</h1>
+
+<p>This installation implies that Galaxy runs as a process in a computer that shares a filesystem with a Kubernetes cluster.</p>
+
+<h2>Additional requirements</h2>
+
+<ul>
+<li>A shared filesystem between the machine(s) where Kubernetes runs and the machine where Galaxy will run.
+<ul>
+<li>This is covered as long as the Persistent Volume created before relies on a disk that is accessible with the same path naming by Galaxy.</li>
+</ul></li>
+</ul>
+
+<h2>Installation and setup for Galaxy</h2>
+
+<p>The Kubernetes runner is currently part of the development version of Galaxy, and should be incorporated on stable version 16.07. In the meantime, we need to install the currently bleeding development version of Galaxy.</p>
+
+<pre><code>git clone https://github.com/galaxyproject/galaxy.git
+cd galaxy
+</code></pre>
+
+<p>The main requirement in terms of Python code for the Kubernetes runner is to have pykube (a Python client library for Kubernetes REST API), which is still an optional Galaxy install. To make sure it is installed by Galaxy on its virtual environment when running:</p>
+
+<pre><code>echo "-e git+https://github.com/pcm32/pykube.git@feature/allMergedFeatures#egg=pykube" &gt;&gt; requirements.txt
+</code></pre>
+
+<h4>Galaxy <code>job_config.xml</code> setup</h4>
+
+<p>And now you need to setup the Kubernetes runner to talk to your Kubernetes installation. For this you need add the following on your <code>config/job_config.xml</code> file in Galaxy:</p>
+
+<ul>
+<li>In the <code>&lt;job_conf&gt;&lt;plugins&gt;...&lt;/plugins&gt;</code> add:</li>
+</ul>
+
+<pre><code>&lt;plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner"&gt;
+   &lt;param id="k8s_config_path"&gt;/Users/jdoe/.kube/config&lt;/param&gt;
+   &lt;param id="k8s_persistent_volume_claim_name"&gt;galaxy-pvc&lt;/param&gt;
+   &lt;!-- The following mount path needs to be the initial part of the "file_path" and "new_file_path" paths
+    set in universe_wsgi.ini (or equivalent general galaxy config file).
+   --&gt;
+   &lt;param id="k8s_persistent_volume_claim_mount_path"&gt;/Users/jdoe/galaxy_data&lt;/param&gt;
+   &lt;param id="k8s_namespace"&gt;default&lt;/param&gt;
+   &lt;!-- Allows pods to retry up to this number of times, before marking the Job as failed --&gt;
+   &lt;param id="k8s_pod_retrials"&gt;1&lt;/param&gt;
+&lt;/plugin&gt;
+</code></pre>
+
+<p>then, you need to make galaxy aware of the containers where your tools will run. For that, we add, for each container desired, within the <code>&lt;destinations&gt;...&lt;/destinations&gt;</code> section of the same <code>job_conf.xml</code>:</p>
+
+<pre><code>&lt;destination id="iso2flux-container" runner="k8s"&gt;
+      &lt;param id="docker_repo_override"&gt;container-registry.phenomenal-h2020.eu&lt;/param&gt;
+      &lt;param id="docker_owner_override"&gt;phnmnl&lt;/param&gt;
+      &lt;param id="docker_image_override"&gt;iso2flux&lt;/param&gt;
+      &lt;param id="docker_tag_override"&gt;latest&lt;/param&gt;
+      &lt;param id="max_pod_retrials"&gt;1&lt;/param&gt;
+      &lt;param id="docker_enabled"&gt;true&lt;/param&gt;
+&lt;/destination&gt;
+</code></pre>
+
+<p>please not that the Kubernetes runner is also able to trust the tool's set docker container, but still the destination placeholder is needed. If you want the runner to prefer the tool's set container, then instead of using <code>override</code> in all the parameters, such as <code>&lt;param id="docker_repo_override"...&gt;</code>, use <code>default</code> instead. Please note that the set repo needs to fit with where your docker image is available (on which registry). To use docker hub, simply remove the line for <code>docker_repo_[override|default]</code>. In the same manner, the owner and the tag are as well optional. Without owner, we would be talking about an official image, like the Perl or Wordpress official image, but this is not something that would have a lot of sense in our context. Please note as well that on the destination definition line, the internal parameter runner needs to point to the Kubernetes runner ID (as set in the plugins).</p>
+
+<p>Up to this point, we have made Galaxy aware of a Kubernetes installation and of container, but now we need to link Galaxy tools to the destinations associated to the containers. For this, we add again to the same file, a tool entry in the <code>&lt;tools&gt;...&lt;/tools&gt;</code>, like this</p>
+
+<pre><code>&lt;tool id="iso2flux" destination="iso2flux-container"/&gt;
+</code></pre>
+
+<p>Which essentially links the galaxy tool, with ID <code>iso2flux</code> to the docker container set in the destination with id <code>iso2flux-container</code>. This of course means that Galaxy has a tool with that id, which has an <code>.xml</code> wrapper within the tools directories and an entry in <code>config/tool_conf.xml</code>.</p>
+
+<h3>Galaxy <code>galaxy.ini</code> setup</h3>
+
+<p>On this file, we need to make sure that dataset files and temporary files are within the scope of the shared filsystem that both Galaxy and Kubernetes see, and they should match the settings used in the k8s PV, k8s PVC and Galaxy runner (plugin) setup written before:</p>
+
+<pre><code># -- Files and directories
+
+# Dataset files are stored in this directory.
+file_path = /Users/jdoe/galaxy_data/files
+
+# Temporary files are stored in this directory.
+new_file_path = /Users/jdoe/galaxy_data/tmp
+</code></pre>
+
+<h2>Run Galaxy</h2>
+
+<p>Finally, you can run Galaxy by issuing <code>./run.sh</code> on the Galaxy root directory, it should expose your tools and allow you to run them through Kubernetes.</p>

@@ -1,0 +1,87 @@
+<h1>Ansible</h1>
+
+<p>After having configured a virtual cluster you need to install the desired software layers and applications to support a microservice-based environment. This can be done by injecting every single software system by hand, but this would in some cases take a very long time. Provisioning software like Ansible brings scripting to server-configuration, enabling automation and repeatability. Ansible in particular deploys packages with templates called Playbooks, which determine what to install on a system and their individual settings. Playbooks makes it simple to create several identical software installations, which severely reduces the time it takes to deploy your workspace. A single Playbook can contain many different parts, for example a kernel, OS and any necessary applications, all packed together into one deployment file. </p>
+
+<h1>Container</h1>
+
+<p>A software container is an application or a function of an application, isolated and wrapped up within a package creating its own environment. Within this environment is also its necessary dependencies, everything it needs to run on its own. With a Container Engine, this software package can be run on top of any OS. This independence enables containers to be added, removed and rearranged within a workflow without disrupting the system. Balancing the granularity of this approach to microservices is important, as packaging an entire software like Photoshop wouldn’t bring any advantages to just running it natively. On the other hand, if softwares are picked apart into too small pieces it is possible to get a severe performance overhead.</p>
+
+<h1>Continuous Integration</h1>
+
+<p>In software development branching a shared repository is an everyday task, each developer works on their own copy before submitting to the mainline, or trunk. Continuous Integration is a development practice which promotes integrating working copies more frequently in order to find possible integration errors as soon in the development cycle as possible. This strategy is advantageous in several ways, the main one being avoiding versioning conflicts. This is done through an automated system that tests the recently integrated branch for errors before committing, giving the developer a heads-up that there are any issues. This removes or reduces time that has to be spent reworking branches if any conflicts arise. The integration test is run automatically by a CI server when an edited branch is committed.</p>
+
+<h1>Docker</h1>
+
+<p>Docker is a platform for running Containers. It comes with Docker Engine, which can be installed on practically any popular operating system of choice. This means any application or function containerized with Docker can be run on any of these operating systems. Docker relies on the underlying OS kernel, which means it is shared between all containers running simultaneously much like it would if everything was running natively.</p>
+
+<h1>DockerHub</h1>
+
+<p>DockerHub is a library of code repositories and images which can be pushed, pulled, forked and merged just like many other repository web services. This makes collaborative work on the same images easier. DockerHub automatically builds a new image when it detects a change in the source code repository. DockerHub also communicates with Docker Cloud, which stores your containers for easy access from your cloud hosts.</p>
+
+<h1>GitHub</h1>
+
+<p>GitHub is a widely popular tool for storing and versioning software worked on either collaboratively or separately. The word “Git” in GitHub is a command-line tool for versioning software, whereas Hub just refers to the extensive library of repositories which GitHub is made up of. GitHub is useful for developers since it makes progress when collaborating, much thanks to forking. Forking a repository means you copy an already existing repo, which is useful because it simplifies development and testing of programs. In the development cycle of an Application it is often forked several times before reaching its final state, and even then it can continue being altered by users, assuming it is open source. GitHub combines this powerful function with social networking and simple sharing functions. </p>
+
+<h1>IaaS</h1>
+
+<p>Infrastructure-as-a-Service are run by big datacenter owners, who rent out their computing resources as they are (perhaps with a virtualization layer for isolation and simple scaling). This means the renter is responsible for managing operating systems, middleware, data and applications. The provider is “only” responsible for the underlying infrastructure, meaning servers, storage and networking. IaaS is advantageous because of its flexibility, since the user can mount any software of choice on top of the infrastructure. </p>
+
+<h1>Jenkins</h1>
+
+<p>Automating parts of a workflow is advantageous in many ways. Jenkins is an open-source continuous integration server that can automate many steps in an ordinary workflow. It can be used with GitHub to automate deployment upon a new commit, which means the user does not have to manually update for every new addition to the code. It also contains an integration test engine which can check if the new commit passes a number of tests. If it doesn’t the user gets notified and can easily track down the issue if it did not occur on the last commit.</p>
+
+<h1>Jupyter</h1>
+
+<p>Jupyter is a web application that combines code and text in a way that makes interacting with computer code easy and simple to understand. It can be used in many different ways but the main application is acting as a UI layer on top of complex computer code, making them human-readable and interactive. These web-documents are called notebooks and support many different programming languages, as well as forwarding the input elsewhere if Jupyter is only used as a WebUI for a bigger computing process. </p>
+
+<h1>Kubernetes</h1>
+
+<p>When working with a container-centric development environment it is necessary to have control over and insight into ongoing processes. Since every process is run within an individual container the main function of such a control-program is to schedule and supervise all the applications for the system. This is the basic function of Kubernetes (sometimes referred to as “k8s”). On top of this Kubernetes also includes the ability to mount storage systems, load balancing, resource monitoring, logging, scaling and more. Kubernetes also introduces its own concept to cloud computing: Pods. Simply put pods are collected group of containers and storage volumes which benefit from running together within the same environment. Before the existence of containers, these processes would be run on the same physical or virtual machine.</p>
+
+<h1>Microservice</h1>
+
+<p>A microservice-based software architecture consists of several coupled pieces of programs that together form an entire application. Pieces (services) are independent and can be added, removed and rearranged as seen fit and necessary. This modularity comes with many benefits, such as adaptability and simple isolation of failure points. Developers can also focus on one part at a time instead of building an entire monolithic system. It is also advantageous for open-source projects that intend for the users to alter the application, since the division into smaller parts makes the architecture easier to understand and adapt to their own vision. Microservice-based systems are becoming standard for many big software companies, which speaks for its potential in the development scene.</p>
+
+<h1>OpenStack</h1>
+
+<p>Software is needed in order to build and manage a cloud. OpenStack is one example of this, an expansive set of tools to help build a virtual research environment with all the benefits that cloud brings with it. It consists of several components all responsible for different important functions (computing, networking, orchestration, workflow, DNS etc.) and it runs on many different hardware configurations. OpenStack is also the foundation of many Public Cloud Providers, proving its effectiveness. PhenoMeNal runs just the same on OpenStack as any Public Cloud Provider.</p>
+
+<h1>PaaS</h1>
+
+<p>With Platform-as-a-Service the providers control everything but the data and applications. This means having entire virtualized systems with complete operating systems and middleware available to the user. The user can utilize this system to develop, test and manage their application without having to worry about resource limits or managing a physical computer and its network. PaaS might, however, be too limited for some users who want complete control over their development-platform.</p>
+
+<h1>Packer</h1>
+
+<p>Packer is a tool which simplifies creating of virtual machine images. It makes use of simple configuration files containing variables set by the user. These can be created from scratch, or modified from pre-configured templates. It is most effective when used in cohesion with other image configuration tools, like Chef and Puppet. It also has integrated Vagrant functions, where it can build a Vagrant virtual box from a configuration file.</p>
+
+<h1>Private Cloud</h1>
+
+<p>A Cloud Computing environment is also possible to run on your own machines, this being called a Private Cloud. This just means the fundamental ideas of cloud (scalability, flexibility, repeatability…) is ported over to a local computer instead of on a rented environment. This means however, that the computing power is limited by the resources of the machine, where many public clouds have the option to expand and adapt to usage needs. It can be cheaper in the long term, as no rent has to be payed. Private Clouds can also be preferable when dealing with sensitive data, or when you need absolute control over the environment.</p>
+
+<h1>Public Cloud Provider</h1>
+
+<p>Cloud Computing requires an environment built on top of infrastructure, which can be supplied by a Public Cloud Provider. These providers can rent out many different resources: pure computing units, storage space or even applications. They are called Public, not because they are accessible by everyone, but because they are accessed over the public internet, securely. Examples of Public Cloud Providers include Google Compute Engine (GCE), Amazon Elastic Cloud (EC2). With a Public Cloud you often pay per usage, meaning it can be cheaper than building an entire local machine for the same workload.</p>
+
+<h1>SaaS</h1>
+
+<p>Software on-demand is a good term for Software-as-a-Service. As a user you pay a subscription fee for the license to use a specific software, often hosted on the provider's public cloud. This alleviates the user of the difficulties that go along with setting up and maintaining the underlying software and hardware, but of course reduces customizability. Paying monthly or yearly for a service can also be advantageous since it circumvents any large startup costs associated with building your own system. </p>
+
+<h1>Terraform</h1>
+
+<p>Terraform is a tool for building, changing, and versioning infrastructure safely and efficiently. It gets rid of a graphical user-interface and instead presents in code through a terminal. This purges the need to manually go through menus to launch your desired servers and infrastructure. It also enables scripting, which means simple, repeatable and expandable management. When applying a terraform update with terraform apply, the platform automatically identifies the differences between the previous version and the update, and only applies the specifics that have changed. This results in updates being fast and simple, which in turn makes the infrastructure easy to evolve over time through iterations and versioning. Terraform can be used locally and with cloud, and is often referred to as a server provisioning software.</p>
+
+<h1>Virtual Research Environment (VRE)</h1>
+
+<p>A Virtual Research Environment is a web-based environment that can be created on-demand through a simple user interface. It provides researchers and research teams, educators, SMEs, and any other type of user, from different disciplines, institutions or even countries, with controlled access to collaborative tools, services, data and computational facilities meeting their specific needs. Hardware setup and software deployment required to operate these facilities are completely transparent to the VRE creator. More information.</p>
+
+<h1>Virtual Organisation (VO)</h1>
+
+<p>Groups of researchers with similar scientific interests and requirements, who are able to work collaboratively with other members and/or share resources (e.g. data, software, expertise, CPU, storage space), regardless of geographical location.</p>
+
+<h1>EGI</h1>
+
+<h1>Elixir Compute Platform</h1>
+
+<h1>Indigo DataCloud</h1>
+
+<h1>Vagrant</h1>

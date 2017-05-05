@@ -1,0 +1,34 @@
+<p>This guide will show a PhenoMeNal developer how to add his/her tool container to our Jenkins CI. By PhenoMeNal developer in this context, we understand anyone who has credentials to create jobs in our Jenkins CI.</p>
+
+<ol>
+<li>Log in to <a href="http://phenomenal-h2020.eu/jenkins/">Jenkins</a> using the two-factor authentication system.</li>
+<li>Create a new job copying the master template named <code>container-template-project</code>:
+<ul>
+<li>On the top left of the screen, below the Jenkins icon, press "New Item"
+<img src="images/jenkins/create_new_job_light.png" alt="New job" /></li>
+<li>Name your job <code>container-&lt;your-tool&gt;</code> (without the <code>&lt;&gt;</code> characters) on the Item Name field.</li>
+<li>Choose "Copy existing item" and start typing "container-template..." you should see an option named "container-template-project", select it.</li>
+<li>Press OK.</li>
+</ul></li>
+<li>Configure the build job (new screen that appeared after pressing Ok):
+<ul>
+<li>Change project URL to your Git repo (of your dockerfile).
+<img src="images/jenkins/configure_job_github_url.png" alt="GitHub URL" /></li>
+<li>Under the selected Git option:</li>
+<li>Change "Repository URL" to your Git repo (of your dockerfile). 
+<img src="images/jenkins/configure_job_source_code.png" alt="Source code" /></li>
+<li>Select the branches from where you want this container to be built on "Branches to build" (We recommend using git-flow branching scheme). Default is set to build both branch develop and branch master.</li>
+<li>Under the "Build Environment" section, set your container name. This name will be used to name your container images.
+<img src="images/jenkins/configure_job_inject_env_var.png" alt="Inject env var" /></li>
+<li>The "Build" section should be let unchanged.</li>
+<li>Inside this section, a test will be run on your built container. <code>test-built-container</code> is the script responsible for this task. By default it will try to run your container using the default entry point that you've defined and passing the "-h" argument, which should trigger the printing of a help page. The application called inside the container should return the status code of zero, otherwise <code>test-built-container</code> will fail. If for this test, you need to run a specific application or use a specific set of arguments, then create a file <code>test-cmds.txt</code> at the root of your container repository, and write inside the commands you want to run:
+<code>
+/my/application/to/call --my-arg
+/my/second/application/to/call --my-other-arg
+/my/third/application/to/call/without/arg
+</code>
+Press "Save".</li>
+</ul></li>
+</ol>
+
+<p>You can now trigger a build manually, in order to check that your build job is working correctly.</p>

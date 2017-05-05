@@ -1,0 +1,140 @@
+<h1>QuickStart for local installation</h1>
+
+<p>If you don't need to understand the details of what is going on, and you aim for the default recommended case of deploying Galaxy inside Kubernetes using mini-kube for local testing, you can go directly to the <a href="QuickStart-Installation-for-Local-PhenoMeNal-Workflow">quick start installation</a>. PhenoMeNal developers are advised to read the complete tutorial at least once to understand what is going on, although the actual operation for day to day testing should be done using the steps in the <a href="QuickStart-Installation-for-Local-PhenoMeNal-Workflow">above link</a>. So you shouldn't need to deal directly with YAML files as below, <strong>following parts of this page are just for illustration purposes, do not actually follow them</strong>. </p>
+
+<h1>Running Galaxy with Kubernetes</h1>
+
+<p>Galaxy is a workflow environment tool developed by a large Bioinformatics community, mostly by people working on the context of Next Generation Sequencing (NGS) tools. The main site for Galaxy can be found <a href="https://galaxyproject.org/">here</a> and its main development point at github can be accessed <a href="https://github.com/galaxyproject/galaxy">here</a>. </p>
+
+<p>Galaxy, as a workflow environment, allows researcher with no programming ability to concatenate common bioinformatics tools to create pipelines or workflows. Galaxy of course uses the original code and binaries of those bioinformatics tools developed elsewhere, and provides tool wrappers for them so that the Galaxy's UI and API can interact with those tools. In a classical installation, normally most tools would be executed serially on the same machine where Galaxy is running. This doesn't scale of course for the purposes of PhenoMeNal. Towards this scalability, and given our model of using tools as microservices, is that the PhenoMeNal project has contributed to the community with a way of connecting galaxy with a container orchestrator.</p>
+
+<p>A container orchestrator is something like "a cluster for containers". <a href="http://kubernetes.io/">Kubernetes</a>, an open source container orchestrator backed up by Google, is today one of the most actively developed projects of this kind. The GitHub project for Kubernetes can be found <a href="https://github.com/kubernetes/kubernetes">here</a>.</p>
+
+<p>The Kubernetes runner for Galaxy contributed by PhenoMeNal was added to main Galaxy Project GitHub repo through a number of pull requests (<a href="https://github.com/galaxyproject/galaxy/pull/2314">2314</a>, <a href="https://github.com/galaxyproject/galaxy/pull/2559">2559</a> among others).</p>
+
+<p>Currently, there are two ways of running:</p>
+
+<ul>
+<li>Galaxy running within the Kubernetes cluster: easier setup, and now also adequate for development of galaxy tools. Currently the preferred way.</li>
+<li>Galaxy running outside of the Kubernetes cluster: might be easier for tool wrapper development purposes, but harder to setup. This is not the preferred way for PhenoMeNal purposes, but will be left as reference for external users.</li>
+</ul>
+
+<h2>Common Requirements</h2>
+
+<ul>
+<li>An installation of Kubernetes. See "Creating a cluster" <a href="http://kubernetes.io/docs/">here</a> for alternatives.
+<ul>
+<li>For a single machine development environment on Linux or Mac OS X, currently the official Kubernetes recommendation is to use <a href="http://kubernetes.io/docs/getting-started-guides/minikube/">Mini-Kube</a>. This is the current preferred way.</li>
+<li>There is now experimental support on Windows for running mini-kube. Please see these temporary <a href="Windows-mini-kube">directions</a>.</li>
+<li>For a single machine development environment on a Mac OS X machine, we have also succesfully worked with <a href="https://github.com/TheNewNormal/kube-cluster-osx">Kube-Cluster</a>.</li>
+</ul></li>
+<li>Credentials to access and use that Kubernetes installation.
+<ul>
+<li>You don't need to worry about this if using mini-kube for development/tool testing.</li>
+<li>Normally in the form of a <code>~/.kube/config</code> file, generated during installation. If you can issue <code>kubectl cluster-info</code> and you don't get an error, then you already have this in place.</li>
+</ul></li>
+<li>Shared filesystem accessible from Kubernetes.</li>
+</ul>
+
+<h2>Common setup: shared filesystem</h2>
+
+<p>The Kubernetes Galaxy runner makes use of Persistent Volume Claim, which is a way in Kubernetes for abstracting access to filesystem (which can be provided on the other side in many ways, such as GlusterFS, Ceph, NFS, local FS, iSCSI, etc.). For this we need to create first on the Kubernetes a <a href="http://kubernetes.io/docs/user-guide/persistent-volumes/walkthrough/">Persistent Volume</a> (PV), which can vary depending on the local Kubernetes cluster that you use.</p>
+
+<h3>PV for minikube on Linux/Mac</h3>
+
+<p>On <code>minikube</code> the only accepted persistent volume supported is currently <code>hostPath</code>, which is nothing but a directory in the hosting machine being shared to the Pods running. The directory that is shared is specified as part of the PV. We can create a PV for use deployment using the following steps:</p>
+
+<ul>
+<li>On a directory of choice, create a file named <code>pv_minikube_internal.yaml</code>. This file should be created in the machine where you installed kubectl. Add the following yaml content to that new file:</li>
+</ul>
+
+<pre><code>apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv0001
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 25Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/opt/mk-galaxy-data"
+</code></pre>
+
+<ul>
+<li>Standing on the same directory where the previous file was created, execute the following command on a shell: </li>
+</ul>
+
+<pre><code>$ kubectl create -f pv_minikube_internal.yaml
+</code></pre>
+
+<ul>
+<li>Notice that the <code>/opt/mk-galaxy-data</code> is internal to the minikube VM and is not shared with your host machine. This means that galaxy will create all its files in internal storage of the minikube VM and that this won't be exposed to your host. The reason for this is that Galaxy makes use of hard links for handling data uploads, and hard links are not supported by VirtualBox on shared folders. We have asked to get support on minikube for NFS mounts instead of shared folders on the boot2docker minikube VM.</li>
+</ul>
+
+<p>You can now skip to the "Create PVC" section below.</p>
+
+<h3>PV for Kube-cluster on OS X</h3>
+
+<p>You don't need this if you used the mini-kube section for PV just before this one, please skip to the next part if that is the case. </p>
+
+<p>For a Mac OS X development environment using Kube-Cluster, this is through the NFS share of the <code>/Users/&lt;you&gt;</code> that Kube-Cluster exposes to the running Kubernetes. The <code>yaml</code> definition for this looks like this:</p>
+
+<pre><code>kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-galaxy-jdoe-nfs
+  labels:
+    type: nfs
+spec:
+  capacity:
+    storage: 30Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retained
+  nfs:
+    path: /Users/jdoe/galaxy_data
+    server: 192.168.64.1
+</code></pre>
+
+<p>This needs to be modified accordingly so that the <code>spec:nfs:path</code> is inside the NFS share already put in place by the server at the defined IP on <code>spec:nfs:server</code> (and so does the IP need to be amended accordingly). This content needs to be placed inside a <code>pv-for-galaxy.yaml</code> and then the PV created inside Kubernetes by issuing <code>kubectl create -f pv-for-galaxy.yaml</code>. Please note that since we will be using Galaxy from outside Kubernetes initially, we will setup galaxy to leave or its temporary and working files on the same path in this PV (<code>/Users/jdoe/galaxy_data</code>).</p>
+
+<h3>Create PVC</h3>
+
+<p>Once the PV is in place in Kubernetes, we can setup the Persistent Volume Claim that Galaxy and the tools will ultimately use. </p>
+
+<p>To do this (applicable to any installation), go through the following steps:</p>
+
+<ul>
+<li>Create a file named <code>pvc-galaxy.yaml</code> and paste the following yaml content on it:</li>
+</ul>
+
+<pre><code>kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: galaxy-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+</code></pre>
+
+<ul>
+<li>Execute on the shell the following command, standing on the same directory where the file was created:</li>
+</ul>
+
+<pre><code>$ kubectl create -f pvc-galaxy.yaml
+</code></pre>
+
+<p>To check that the PV and PVC have been created, you can execute on the same shell <code>kubectl get pv</code> and <code>kubectl get pvc</code>, and you should see the names and status of the created units. Please note that the storage requirement made by the PVC (<code>spec:resources:requests:storage</code>) should be smaller than the storage provided by the PV (<code>spec:capacity:storage</code>), otherwise it won't be allocated.</p>
+
+<h2>Setup</h2>
+
+<ul>
+<li><a href="Galaxy-inside-Kubernetes">Galaxy inside Kubernetes</a>: Both Galaxy and the tools run inside Kubernetes. This is the <strong>preferred route</strong> for both users and developers, and the path requiring less setup. This is a legacy explanations of what would be needed to be done manually if not using Helm. Yaml files might be outdated.</li>
+<li><a href="Galaxy-outside-Kubernetes">Galaxy outside Kubernetes setup</a>: This is a legacy of initial versions, where Galaxy was submitting jobs to Kubernetes but was not running inside Kubernetes as the tools deployed. Requires more setup and might be outdated. If you are following this setup, take note of the PVC <code>metadata:name:</code> (in the example, it has the value <code>galaxy-pvc</code>), as this needs to be used in the Kubernetes runner setup in Galaxy.</li>
+</ul>

@@ -1,0 +1,60 @@
+<h1>PhenoMeNal H2020 wiki</h1>
+
+<p>PhenoMeNal provides Virtual Research Environments (VRE) for interoperable and scalable metabolomics analysis. This wiki holds information pertaining to its usage and development.</p>
+
+<h2>Resources for Users</h2>
+
+<p>The PhenoMeNal infrastructure will be available for deployment in public and private clouds, as well as local hardware. The main access for users will be through our Virtual Research Environment (VRE).</p>
+
+<h3>Documents and Tutorials</h3>
+
+<ul>
+<li><a href="Phenomenal-eInfrastructure-Landscape">PhenoMeNal and the e-infrastructure landscape</a></li>
+<li><a href="Overview-of-PhenoMeNal-Architecture-and-Components">Introduction to PhenoMeNal architecture and components</a></li>
+<li><a href="Starting-PhenoMeNal-CRE-via-PhenoMeNal-Portal">Starting a PhenoMeNal CRE via PhenoMeNal Portal</a></li>
+<li><a href="Starting-a-PhenoMeNal-CRE-on-a-public-or-private-cloud-provider">Starting a PhenoMeNal CRE on a public or private cloud provider</a></li>
+<li><a href="Starting-a-PhenoMeNal-CRE-on-a-local-server-(bare-metal)">Starting a PhenoMeNal CRE on a local server (bare-metal)</a></li>
+<li><a href="Vocabulary-and-definitions-in-PhenoMeNal">Vocabulary and definitions in PhenoMeNal</a></li>
+</ul>
+
+<h3>Tools/Workflow Tutorials</h3>
+
+<ul>
+<li><a href="Sacurine-statistical-workflow">Sacurine Statistical Workflow Tutorial</a></li>
+<li><a href="fluxomics-workflow">Fluxomics Workflow Tutorial</a>
+<!--</li>
+<li><a href="mtbls233-workflow">MTBLS-233 Workflow Tutorial</a>
+--></li>
+</ul>
+
+<h2>Resources for Developers</h2>
+
+<p>This section contains technical documentation for developers in the project and for those interested in learning more about the PhenoMeNal architecture, frameworks, and evaluations.</p>
+
+<p>If you aim to contribute to this wiki, please read the <a href="Wiki-contribution-guidelines">wiki contribution guidelines</a> before making changes.</p>
+
+<h3>Release information</h3>
+
+<ul>
+<li><a href="Release-information">Schedule</a></li>
+<li><a href="Galaxy-Release-Procedure">Galaxy release procedure</a></li>
+</ul>
+
+<h3>Documents and Guidelines</h3>
+
+<ul>
+<li><a href="QuickStart-Installation-for-Local-PhenoMeNal-Workflow">Installation for Local PhenoMeNal Workflow using Galaxy on MiniKube</a></li>
+<li><a href="Uninstallation-of-Local-PhenoMeNal-Workflow">Uninstallation of Local PhenoMeNal Workflow using Galaxy on MiniKube</a></li>
+<li><a href="How-to-make-your-software-tool-available-through-PhenoMeNal">How to make your software tool available through PhenoMeNal</a>, including:
+<ul>
+<li><a href="Dockerfile-Guide">Dockerfile creation</a></li>
+<li><a href="Jenkins-Guide">Addition of container to Jenkins</a></li>
+<li><a href="Tool-container-release-process">Container release procedure</a></li>
+</ul></li>
+<li><a href="Continuous-Integration-in-PhenoMeNal">Continuous Integration of software tools in PhenoMeNal</a></li>
+<li><a href="Notes-on-container-streamlining-testing-and-statistics">Notes on container streamlining, testing &amp; statistics</a> (Merge-Google-doc-here)</li>
+<li><a href="The-Guideline-for-Container-GitHub-Respository-README.md-Creation">Guideline for Container GitHub Respository README.md Creation</a></li>
+<li><a href="eInfra-requirements-local-systems">e-infrastructure requirements for PhenoMeNal VRE on local systems</a></li>
+<li><a href="galaxy-with-k8s">Using Galaxy with Kubernetes to run containerized tools</a></li>
+<li><a href="Using-Docker">Using Docker</a></li>
+</ul>

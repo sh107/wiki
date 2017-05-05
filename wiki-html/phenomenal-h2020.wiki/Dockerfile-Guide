@@ -1,0 +1,151 @@
+<h1>Requirements</h1>
+
+<p>We require the following minimum for a PhenoMeNal container image:
+- From and Maintainer tags
+- Versioning
+- Relevant scripts must be executable
+- Testing features
+- Development done in the develop branch, and releases on master branch. Only these two branches are being built, on push (so push only when you have locally tested the container to build and work). </p>
+
+<p>These are all explained in detail below.</p>
+
+<h2>From and Maintainer tags</h2>
+
+<pre><code>FROM ubuntu:16.04
+
+MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+</code></pre>
+
+<ul>
+<li>If possible, try to use ubuntu:16.04 as the base image. If this doesn't work, use what works. Alpine images are interesting to try!</li>
+<li>Set the maintainer as advised and add your email to that Google group, so that it someone contacts us regarding the container, you can answer.</li>
+</ul>
+
+<h2>Versioning</h2>
+
+<p>We require that the Dockerfile contains the following labels which set the tool and container version (which is used to tag the image):</p>
+
+<pre><code>LABEL software.version="0.4.28"
+LABEL version="0.1"
+LABEL software="your-tool-name"
+</code></pre>
+
+<p>The numbers above are of course a simple example. The <code>version</code> refers to the container version and should follow semantic versioning and you should only manage the major and minor version numbers (first two), the CI will manage the patch number. The <code>software.version</code> field refers to the tool's version; simply copy it as it appears, but replace any spaces with a <code>_</code>. These labels are used by the CI server to set the tag of the container image once it is pushed to our docker registry. </p>
+
+<h3>How do I decide on version numbers?</h3>
+
+<p>The million dollar question. The <code>software.version</code> one is easy, as the minute that you point to a new version of the software that you're making a container for, you change that one to reflect that change. For the <code>version</code> of the container itself, the guideline follows a short definition of what we understand here by API change:</p>
+
+<p>An API change would be any modification which alters the way that a wrapper (like the one for Galaxy) needs to call the tool or process its outputs. So, if you are changing any of these:
+- command name
+- the number of arguments
+- output file format(s)
+- input file format(s)
+- conditionality between arguments (one argument requires this or another argument).</p>
+
+<p>Or anything else that changes the way you invoke the tool is an API change and will produce a backward incompatibility with whatever wrappers are using the tool. Think twice before introducing any of these, and if you can avoid them at reasonable cost, then do so.</p>
+
+<p>Having said that:</p>
+
+<ol>
+<li>For very minor changes that don't change the API contract, <strong>you don't need to do anything</strong>. The CI will on its own update the patch number (which you don't control as a developer).</li>
+<li>If you are making a change in the container that is not small, but doesn't change the API still, like changing the base image or changing needed libraries, making the image smaller (that is so cool to do!), <strong>change the minor version number</strong>, as this changes are backwards compatibility with the wrappers.</li>
+<li>If you are making changes that break the API, <strong>bump the major version up and set the minor version to 0</strong>. For instance, if you are on <code>version="0.3"</code> you would go to <code>version="1.0"</code>. Again, avoid API changes if possible.</li>
+</ol>
+
+<p>Be mindful that changing the version of the tool being containerised might introduce API changes, please do test those things before committing to your development branch. </p>
+
+<h2>Make sure that relevant scripts are executable</h2>
+
+<p>If the main functionality of the container is based on a script (like a Python, Perl or R script), make sure that:
+- The script is in the PATH defined in the image.
+- The script is executable.
+- The script has the adequate <a href="https://en.wikipedia.org/wiki/Shebang_(Unix)">shebang</a>.</p>
+
+<p>This means that the script can be executed through its name, regardless of the working directory where the instruction is generated. This is necessary for the correct execution of jobs by Galaxy in Kubernetes.</p>
+
+<h2>Testing features</h2>
+
+<p>For the proper testing of the container in the CI before being pushed to the registry, you need to provide at least the following two files in the base directory of the repo:</p>
+
+<ul>
+<li><code>test_cmds.txt</code> for lightweight testing, where you make sure that executables are in place or other simple checks. Each line is executed independently while on the CI, so don't write complete bash scripts here. This file is not added to the docker image -- it remains outside.</li>
+<li><code>runTest1.sh</code> for heavyweight testing using real data sets. An example file can be found <a href="https://github.com/phnmnl/container-iso2flux/blob/24b8c18e0608261c0e2163cae76a7a5b21cb701f/runTest1.sh">here</a>. Basically in this file you will install whatever software is needed to fetch data (such as wget), whatever is needed to run a test (if anything), run the main tool with the downloaded data, and then check that, either files are exactly what you expect, they contain something that you expect, or they at least where created. This file needs to be added to the image's path, be executable and have an appropriate shebang. It should aim to call the tool as any wrapper would do it, but considering that it is invoked "inside" the container by the container orchestrator during tests.</li>
+</ul>
+
+<h2>Develop and Master branches on git</h2>
+
+<p>You should have development done on a branch called <code>develop</code> on Github. When we are close to a release, or it is clear to the developer that the container is ripe for being released, only then a merge to <code>master</code> should be done (or even better, a git flow release). One way to deal with this is to use the <a href="http://nvie.com/posts/a-successful-git-branching-model/">git flow branching pattern</a>, and even easier, through a client that supports git flow (like <a href="https://www.gitkraken.com/">gitkraken</a>, <a href="https://www.atlassian.com/software/sourcetree">Atlassian SourceTree</a>, or the command line <a href="https://github.com/nvie/gitflow/wiki/Installation">gitflow</a> among others). For a comparison on how git flow makes your life easier, see <a href="https://gist.github.com/JamesMGreene/cdd0ac49f90c987e45ac">this link</a>.</p>
+
+<h1>Recommendations</h1>
+
+<p>Besides reading the <a href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/">Docker best practices for writing a Dockerfile</a>, we recommend the following:</p>
+
+<h2>Reduce image size by multiple-line runs.</h2>
+
+<pre><code>RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends r-base r-base-dev \
+                              libcurl4-openssl-dev libssl-dev git &amp;&amp; \
+    echo 'options("repos"="http://cran.rstudio.com", download.file.method = "libcurl")' &gt;&gt; /etc/R/Rprofile.site &amp;&amp; \
+    R -e "install.packages(c('doSNOW','plotrix','devtools','getopt','optparse'))" &amp;&amp; \
+    R -e "library(devtools); install_github('jianlianggao/batman/batman',ref='c02ac5cf9206373d2dde1b8e12548964f8379627'); remove.packages('devtools')" &amp;&amp; \
+    apt-get purge -y r-base-dev git libcurl4-openssl-dev libssl-dev &amp;&amp; \
+    apt-get -y clean &amp;&amp; apt-get -y autoremove &amp;&amp; rm -rf /var/lib/{cache,log}/ /tmp/* /var/tmp/*
+</code></pre>
+
+<p>While this reduces readability, it also reduces massively the size of the resulting image. The idea is that you only install packages that you need, but also for the time that you need them. So, if for instance you need some package to be able to compile something on installation, but then that is no longer needed afterwards on for runtime, then this approach avoids that that package adds any weight to your image. In this example, we need <code>git</code> and <code>r-base-dev</code> (and their dependencies) to install a package, but not for running later on. If the installation <code>apt-get install ...</code> and removal <code>apt-get purge ...</code> would be on separate <code>RUN</code> statements, then the image won't reclaim the space of these packages and their dependencies.</p>
+
+<h2>Python scripts should be pip installable</h2>
+
+<p>Making your set of Python scripts pip-installable will increase the chances that others will use your Python code. This also allows to handle all the dependencies and simplify the package installation inside a docker container. There are plenty of guides on how to make your scripts pip-installable, <a href="https://packaging.python.org/distributing/">here</a> is one. This also make your scripts executable and available in the path.</p>
+
+<p>It is not necessary that your package be available through the PyPip repository (if you want, better). It can still be installed from your git repo using pip, if it complies with the structure, using:</p>
+
+<pre><code>pip install -e git+https://github.com/&lt;your-user&gt;/&lt;your-tool-repo&gt;.git#egg=&lt;your-tool-name&gt;
+</code></pre>
+
+<h2>R scripts should be installable</h2>
+
+<p>To ease the installation of your R code inside the docker container, your R objects/set of scripts, should be made available as an R package. Instructions on how to package this can be found <a href="http://r-pkgs.had.co.nz/">here</a> (please note that even if the site advertises a book, it includes all the content to do what we need). This won't make your main R script executable though, so you still need to make sure that this is the case as advised above.</p>
+
+<h2>Installing tools from Git repositories</h2>
+
+<h3>Use shallow clones</h3>
+
+<p>To reduce image size, clone the repository without its history (you're not going to need it since you won't be developing on that checkout).  To do this, specify these options to <code>git clone</code>:  <code>--depth 1 --single-branch --branch &lt;name of the branch you need&gt;</code>.</p>
+
+<p>Here's a full example for our current Galaxy runtime:</p>
+
+<pre><code>RUN git clone --depth 1 --single-branch --branch feature/allfeats https://github.com/phnmnl/galaxy.git
+WORKDIR galaxy
+RUN git checkout feature/allfeats
+</code></pre>
+
+<h3>Try to point to a defined Git commit/release</h3>
+
+<p>When making a container for a tool which installs this tool from a git repo, if you're happy with the development state of the tool (or it is a well established tool), try to point the Dockerfile to a defined commit or release of the tool. This can be done like this:</p>
+
+<p>On R:
+<code>bash
+R -e "library(devtools); install_github('jianlianggao/batman/batman',ref='c02ac5cf9206373d2dde1b8e12548964f8379627'); remove.packages('devtools')" &amp;&amp; \
+</code></p>
+
+<p>in which case we are pointing to a defined commit.</p>
+
+<p>Getting particular files:
+```bash
+ENV WRAPPER_REVISION aebde21cd2c21a09f138abb48bea19325b91d304</p>
+
+<p>RUN apt-get -y update &amp;&amp; apt-get -y install --no-install-recommends curl zip &amp;&amp; \
+    curl https://raw.githubusercontent.com/ISA-tools/mzml2isa-galaxy/$WRAPPER<em>REVISION/galaxy/mzml2isa/wrapper.py -o /usr/local/bin/wrapper.py &amp;&amp; \
+    curl https://raw.githubusercontent.com/ISA-tools/mzml2isa-galaxy/$WRAPPER</em>REVISION/galaxy/mzml2isa/pub<em>role.loc -o /usr/local/bin/pub</em>role.loc &amp;&amp; \
+    curl https://raw.githubusercontent.com/ISA-tools/mzml2isa-galaxy/$WRAPPER<em>REVISION/galaxy/mzml2isa/pub</em>role.loc -o /usr/local/bin/pub_status.loc &amp;&amp; \
+    chmod a+x /usr/local/bin/wrapper.py &amp;&amp; \
+    apt-get purge -y curl &amp;&amp; \
+    apt-get autoremove -y &amp;&amp; apt-get clean &amp;&amp; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+```</p>
+
+<h2>Don'ts</h2>
+
+<ul>
+<li>Do not upgrade the base image, that is to be done by the maintainer of the image: don't do <code>apt-get upgrade</code> or <code>apt-get dist-upgrade</code>. This is a docker best practice (not to do upgrades of the base image).</li>
+</ul>

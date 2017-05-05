@@ -1,0 +1,156 @@
+<h1>Running Galaxy inside Kubernetes</h1>
+
+<p>In this installation, the Galaxy server runs as a Kubernetes Pod (controlled by a Replication Controller) inside Kubernetes, and uses the Service Account to communicate to the master nodes to send jobs to run. This simplifies greatly the installation of Galaxy as compared to the other schema, as in this case Galaxy runs inside a container and we only need to specify this to the cluster.</p>
+
+<p>Given that the PVC has already been created, the only necessary thing to do is to create a Service (for access) and a Replication Controller that invokes the desired Galaxy docker image previously configured to run inside Kubernetes. </p>
+
+<p>To create the service:</p>
+
+<ul>
+<li>Create a file named <code>galaxy-k8s-service.yaml</code> and add the following content to it:</li>
+</ul>
+
+<pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: galaxy-svc-k8s
+  labels:
+    app: galaxy-k8s
+spec:
+  type: NodePort
+  ports:
+   - name: http 
+     port: 8080
+     nodePort: 30700
+  selector:
+    app: galaxy-k8s
+</code></pre>
+
+<ul>
+<li>Execute, standing on the same directory where the file was created, the following command on the shell: </li>
+</ul>
+
+<pre><code>$ kubectl create -f galaxy-k8s-service.yaml
+</code></pre>
+
+<p>Take note of the output, it will tell you that you can access Galaxy on port <strong>30700</strong> later, as Galaxy becomes available.</p>
+
+<p>Finally, to create the Replication Controller, follow these steps:</p>
+
+<ul>
+<li>Create a file named <code>galaxy-k8s-rc.yaml</code> and add the following yaml content:</li>
+</ul>
+
+<pre><code>apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: galaxy-k8s 
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+         app: galaxy-k8s
+    spec:
+      containers:
+      - name: galaxy-k8s
+        image: container-registry.phenomenal-h2020.eu/phnmnl/galaxy-k8s-runtime
+        command: ["/bin/bash","-c","mkdir -p /opt/galaxy_data/database-sqlite &amp;&amp; ./run.sh --daemon &amp;&amp; tail -f paster.log"]
+        lifecycle: 
+          preStop:
+            exec:
+               command:
+                   - "./run.sh"
+                   - "--stop"
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+        volumeMounts:
+          - mountPath: "/opt/galaxy_data"
+            name: galaxy-pvc
+      volumes:
+        - name: galaxy-pvc
+          persistentVolumeClaim:
+              claimName: galaxy-pvc
+</code></pre>
+
+<ul>
+<li>Standing on the same directory, execute on the shell </li>
+</ul>
+
+<pre><code>$ kubectl create -f galaxy-k8s-rc.yaml
+</code></pre>
+
+<h2>Accessing the Galaxy instance</h2>
+
+<p>To access Galaxy deployed like we showed, you need to know the IP of your Kubernetes master (or of one of its nodes) and the port number in which Galaxy is being served. The IP can be obtained by executing:</p>
+
+<pre><code>kubectl cluster-info
+</code></pre>
+
+<p>which should produce something like:</p>
+
+<pre><code>Kubernetes master is running at https://192.168.99.100:443
+kubernetes-dashboard is running at https://192.168.99.100:443/api/v1/proxy/namespaces/kube-system/services/kubernetes-dashboard
+</code></pre>
+
+<p>In this case <code>192.168.99.100</code> is the IP of the Kubernetes master. <strong>DO NOT USE HTTPS, BUT HTTP ONLY</strong>.</p>
+
+<p>This means that to access Galaxy, you need to point to your browser to port <strong>30700</strong> (as we fixed that on the svc previously) of your Kubernetes cluster IP. So for our example, Galaxy should be accessible on <strong>http</strong>://192.168.99.100:30700/. Please <strong>DO NOT USE HTTPS, BUT HTTP ONLY</strong>.</p>
+
+<h2>For Galaxy tool developers</h2>
+
+<p>If you want to try Galaxy tools that you're developing within this Galaxy installation, please click to follow <a href="Galaxy inside Kubernetes for tool developers">this guide</a>.</p>
+
+<h1>TL;DR</h1>
+
+<p>Copy paste this:</p>
+
+<pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: galaxy-svc-k8s
+  labels:
+    app: galaxy-k8s
+spec:
+  type: NodePort
+  ports:
+   - 
+     port: 8080
+  selector:
+    app: galaxy-k8s
+--
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: galaxy-k8s 
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+         app: galaxy-k8s
+    spec:
+      containers:
+      - name: galaxy-k8s
+        image: container-registry.phenomenal-h2020.eu/phnmnl/galaxy-k8s-runtime
+        imagePullPolicy: Always
+        command: ["/bin/bash","-c","mkdir -p /opt/galaxy_data/database-sqlite &amp;&amp; ./run.sh --daemon &amp;&amp; tail -f paster.log"]
+        lifecycle: 
+          preStop:
+            exec:
+               command:
+                   - "./run.sh"
+                   - "--stop"
+        ports:
+          - containerPort: 8080
+        volumeMounts:
+          - mountPath: "/opt/galaxy_data"
+            name: galaxy-pvc
+      volumes:
+        - name: galaxy-pvc
+          persistentVolumeClaim:
+              claimName: galaxy-pvc
+</code></pre>
+
+<p>into a file called <code>galaxy-k8s-sv-rc.yaml</code> and execute <code>kubectl create -f galaxy-k8s-sv-rc.yaml</code>. A message will indicate on which port of any of the node's IPs you can access Galaxy.</p>

@@ -1,0 +1,15 @@
+<h1>Uninstallation of local PhenoMeNal Workflow</h1>
+
+<p>Please download this <a href="https://raw.githubusercontent.com/phnmnl/docker-galaxy-k8s-runtime/develop/deployment/uninstall-phenomenal.sh">bash script</a> by right-clicking "save link as".</p>
+
+<p>Change the permission of the bash script in a local directory of your choice.</p>
+
+<pre><code>chmod 744 uninstall-phenomenal.sh
+</code></pre>
+
+<p>Run the following command in the directory. </p>
+
+<pre><code>./uninstall-phenomenal.sh
+</code></pre>
+
+<p>This script firstly removes the Galaxy Replication Controller, and then removes the service and persistent volume set for Galaxy in minikube.</p>

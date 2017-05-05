@@ -1,0 +1,85 @@
+<h1>Using docker-compose</h1>
+
+<h2>Using docker-compose on a single host</h2>
+
+<p>With high demands on the services and lots of users connecting to a service, it is necessary to run more than one container of a service. While traditional approaches just launched more instances of one server at different ports (e.g. :80, :81, :82, …), modern approaches not only use some kind of virtualization but also some kind of automatic proxying or load balancing (e.g. automatically linking :80 to various ports within the virtualization framework) and scaling (having a certain number of containers depending on e.g. server load).</p>
+
+<p>This can be achieved and automated with docker-compose and with writing 'docker-compose.yaml' files (<a href="https://docs.docker.com/compose/compose-file/">see reference here</a>).</p>
+
+<p>This example demonstrates how to run three instances of GALAXY on a single node by using haproxy (a http-proxy with load balancing features).</p>
+
+<p>In our case we use the demo found at: <a href="https://github.com/korseby/docker-galaxy">https://github.com/korseby/docker-galaxy</a></p>
+
+<p>The file docker-compose.yaml contains rules for running more than one container of a service.</p>
+
+<p>We are using haproxy for load balancing between the three different containers of GALAXY, thus the directory galaxy-haproxy contains rules and the configuration file for haproxy running in a separate docker container. The same functionality can be achieved with nginx and other http-load balancers.</p>
+
+<p>All you need to do is run docker-compose in order to orchestrate three running containers of GALAXY:</p>
+
+<pre><code>docker-compose up -d
+</code></pre>
+
+<p>Docker-compose does everything for you. It pulls the official GALAXY-image from dockerhub, starts three GALAXY-containers and then build and starts galaxy-haproxy. Galaxy-haproxy already receives proper dns-entries from docker-compose to link to the three instances of the GALAXY-service. The docker-compose.yaml file includes all rules that are needed and it looks like this:</p>
+
+<pre><code>galaxy-a:
+  image: bgruening/galaxy-stable
+  expose:
+    - 80
+galaxy-b:
+  image: bgruening/galaxy-stable
+  expose:
+    - 80
+galaxy-c:
+  image: bgruening/galaxy-stable
+  expose:
+    - 80
+galaxy-haproxy:
+  build: galaxy-haproxy
+  volumes:
+   - galaxy-haproxy:/haproxy-override
+  links:
+   - galaxy-a
+   - galaxy-b
+   - galaxy-c
+  ports:
+   - "9080:80"
+   - "9070:70"
+  expose:
+   - "80"
+   - "70”
+</code></pre>
+
+<p>In our case, GALAXY can be reached at http://127.0.0.1:9080. Docker-compose automatically switches between the three containers in a round-robin way based on the session-id of the connection.</p>
+
+<p>Statistics of haproxy can be seen at http://127.0.0.1:9070.</p>
+
+<p>Some information of running containers can be obtained with:</p>
+
+<pre><code>docker-compose ps
+docker-compose logs        # press CTRL-C
+</code></pre>
+
+<p>Docker-compose can be shut down with the following command:</p>
+
+<pre><code>docker-compose down
+</code></pre>
+
+<h2>Using docker-compose on multiple hosts (Work-in-progress)</h2>
+
+<p>In master node (192.168.1.95):
+Edit /etc/default/docker or on Ubuntu 16+: /etc/systemd/system/multi-user.target.wants/docker.service
+/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock --cluster-advertise=192.168.1.95:2375 --cluster-store=etcd://192.168.1.95:2379 -p /var/run/docker-bootstrap.pid --iptables=false --ip-masq=false --bridge=none --graph=/var/lib/docker-bootstrap
+docker run -d -ti etcd etcd --listen-client-urls http://localhost:2379,http://192.168.1.95:2379 --advertise-client-urls http://192.168.1.95:2379
+systemctl daemon-reload
+docker network ls
+docker network create -d overlay test
+docker network inspect test
+docker run --net test -ti --name alpha debian:jessie bash</p>
+
+<p>Worker nodes:
+/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock --cluster-advertise=192.168.1.175:2375 --cluster-store=etcd://192.168.1.95:2379 -p /var/run/docker-bootstrap.pid --iptables=false --ip-masq=false --bridge=none --graph=/var/lib/docker-bootstrap
+docker network ls
+docker network inspect test
+docker run --net test -ti --name beta debian:jessie bash
+docker run --net test -ti --name gamma debian:jessie bash
+docker network inspect test</p>

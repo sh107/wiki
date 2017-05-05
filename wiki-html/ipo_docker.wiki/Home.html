@@ -1,0 +1,25 @@
+<h1>PhenoMeNal - Micro services</h1>
+
+<h3>IPO - V 0.1</h3>
+
+<p>usage</p>
+
+<p>On the main directory, to build the image:
+<code>
+docker build -t ipo .
+</code></p>
+
+<p>And then to run:</p>
+
+<pre><code>docker run ipo -i /complete/path/to/filesPaths -o /complete/path/to/out
+</code></pre>
+
+<p>On Mac OS X with docker-machine, because there is this intermediate VM, it is recommended to mount a high level directory on docker (as /Users, which will be already mounted on the docker-machine VM.</p>
+
+<pre><code>docker run -v /Users:/Users ipo -i /Users/yourUser/path/to/filesPaths -o /Users/yourUser/path/to/out
+</code></pre>
+
+<p>IPO has a number of options, which we have wrapped for you, to find them out please execute:</p>
+
+<pre><code>docker run ipo
+</code></pre>

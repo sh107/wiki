@@ -1,0 +1,181 @@
+<h1>General concept of Jenkins</h1>
+
+<h2>What/Why is Jenkins?</h2>
+
+<p>As software developers, we would love to focus more on writing code and have less worries about testing and deployment. This is exactly what Jenkins helps us achieve!
+Jenkins makes software project testing and deployment automatic!</p>
+
+<h2>Installing your own Jenkins</h2>
+
+<p>In this tutorial, we'll set up Jenkins and install its GitHub plugin so it can automatically run tests every time new code is pushed to github
+After that, we'll try to have a solution to automatically push that code to our app server, removing the need for us to manually deploy our software application.</p>
+
+<p>The Following Steps were executed on Ubuntu 16.04:
+- INSTALL JAVA 8 (Oracle JDK 8):
+<code>bash
+  sudo add-apt-repository ppa:webupd8team/java
+  sudo apt-get update
+  sudo apt-get install oracle-java8-installer
+</code>
+- Set up the JAVA_HOME Environment Variable. In your /etc/environment ..
+Run command like:
+   <code>sudo nano /etc/environment</code>
+  And put the following line as a new line at the end:
+<code>JAVA_HOME="/usr/lib/jvm/java-8-oracle"</code></p>
+
+<ul>
+<li>Now let’s install Jenkins:</li>
+<li>First we need to add a new apt repository before starting the install</li>
+</ul>
+
+<p><code>sudo wget -q -O - http://pkg.jenkins-ci.org/debian/jenkins-ci.org.key | sudo apt-key add -</code></p>
+
+<pre><code>- If the above command doesn’t work, please try:
+ ``` sudo wget -q -O - https://jenkins-ci.org/debian/jenkins-ci.org.key | sudo apt-key add - ```
+</code></pre>
+
+<p><code>sudo sh -c 'echo deb http://pkg.jenkins-ci.org/debian binary/ &gt; /etc/apt/sources.list.d/jenkins.list'</code></p>
+
+<p><code>sudo apt-get update</code></p>
+
+<ul>
+<li><p>Now we can start the installation:
+<code>sudo apt-get install jenkins</code></p></li>
+<li><p>This is what will happen:</p>
+
+<ul>
+<li>Jenkins will be launched as a daemon on start up. More details can be found in <code>/etc/init.d/jenkins</code> </li>
+<li>The 'jenkins' user is created to run this service</li>
+<li>If for any reason you are troubleshooting Jenkins, the log file will be placed in
+     <code>/var/log/jenkins/jenkins.log</code></li>
+<li><code>/etc/default/jenkins</code> will capture configuration parameters for the launch like e.g 
+    JENKINS_HOME</li>
+<li>By default, Jenkins listen on port 8080. Access this port with your browser to start configuration</li>
+</ul></li>
+<li><p>Once complete, Jenkins will be running and available on port 8080. Navigate your browser to:
+        <code>localhost:8080</code> 
+and you'll see the Jenkins landing page</p></li>
+<li><p>When you run Jenkins for the first time, you will be asked to unlock it. To ensure Jenkins is securely set up by the administrator, a password has been written to the log (it will give you the location, just copy and paste the password from there)</p>
+
+<ul>
+<li>For any reasons, if errors occur when you click <code>save</code> or <code>apply</code> in the <code>configure global security</code> page. You will be redirected to a login page. Oops, you don’t know the username and password. You can’t login. You need to reset Jenkins by running the command <code>sudo nano /var/lib/jenkins/config.xml</code> and changing <code>&lt;useSecurity&gt;true&lt;/useSecurity&gt;</code> to <code>&lt;useSecurity&gt;false&lt;/useSecurity&gt;</code>. After saved, you need to restart jenkins service by running:  sudo service jenkins restart Then you will be able to redo jenkins security settings.</li>
+<li>In the <code>configure global security</code> setting page, if you want to use <code>Unix user/group database</code> as <code>security realm</code>, you need to add user <code>jenkins</code> to <code>shadow</code> group by the command: <code>sudo usermod -a -G shadow jenkins</code></li>
+</ul></li>
+<li><p>If all goes well, you will be greeted by the “Customize Jenkins” page .. feel free to close it!</p></li>
+<li><p>On the Jenkins landing page, click the <code>Manage Jenkins</code> link, and then the <code>Manage Plugins</code> link. Switch to the <code>Available</code> tab, and search for the <code>GitHub Plugin</code>. Click the <code>Install</code> checkbox, and then the <code>Download now and install after restart button</code>.</p></li>
+<li>This will initiate the install sequence. The <code>GitHub plugin</code> has several dependencies, so multiple plugins will be installed. At the bottom of the page, check the <code>Restart Jenkins when installation is complete</code> and make sure no jobs are running - this will prompt Jenkins to restart once the installations are complete.</li>
+<li><p>Or you can restart Jenkins manually by doing:
+<code>sudo service jenkins restart</code></p></li>
+<li><p>By the way, we still need to install Git:
+<code>sudo apt-get install git</code></p></li>
+</ul>
+
+<p>I'm hoping that you are familiar with github .. create a github repository and add the following java class (name it HelloWorld.java):
+      public class HelloWorld {
+         public static void main(String args[]){
+            System.out.println("Hello World .. Jenkins is here!");
+         }
+      }</p>
+
+<ul>
+<li><p>see here for an example:
+<code>https://github.com/nsadawi/JavaHelloWorld/</code></p></li>
+<li><p>Now, let's go back to Jenkins as it has restarted and let's add our project. Click the <code>New Item</code> button. Use <code>hello-world-jenkins</code> for the item name, choose <code>Build a free-style software project</code>, and click <code>OK</code>.</p></li>
+<li>Now you should be on the project's settings page</li>
+<li>Feel free to add some project description</li>
+<li><p>Add your project's GitHub URL to the GitHub project box: <br />
+<code>https://github.com/&lt;your-github-name&gt;/JavaHelloWorld/</code></p></li>
+<li><p>After that, from <code>Source Code Management</code> choose the <code>Git</code> option</p></li>
+<li><p>New fields will appear, add the URL to our GitHub project repo to the Repository URL field (don't worry about the credentials):
+<code>https://github.com/&lt;your-github-name&gt;/JavaHelloWorlds.git</code></p></li>
+<li><p>From the check boxes below this, you need to tick <code>Build when a change is pushed to GitHub</code></p></li>
+<li>By doing this, our project will build each time we push to our GitHub repository.</li>
+<li>Always bear in mind, we need to tell Jenkins what to do when it runs a build</li>
+<li><p>To do this, click the <code>Add build step</code> drop-down, and select <code>Execute shell</code></p></li>
+<li><p>This will make a Command dialogue available, and what we put in this dialogue will be run when a build initiates. Add the following to it:
+<code>javac HelloWorld.java</code>
+<code>java HelloWorld</code></p></li>
+<li><p>Click <code>Save</code></p></li>
+<li><p>Now go to your GitHub repository <code>https://github.com/&lt;your-github-name&gt;/JavaHelloWorld/</code>
+and click <code>Settings</code></p></li>
+<li>Click the <code>Webhooks &amp; Services</code> tab, and then the <code>Add service</code> drop-down</li>
+<li>Select the Jenkins (GitHub plugin) service</li>
+<li>Add the following as the Jenkins hook url (the xxx.xxx.xxx.xxx should be your Jenkins servers IP address):
+<code>http://xxx.xxx.xxx.xxx:8080/github-webhook/</code></li>
+</ul>
+
+<p>-Click <code>Add</code> service
+- Your project is now ready</p>
+
+<ul>
+<li><p>Edit the java class by adding something to:
+<code>System.out.println("Hello World .. Jenkins is here!");</code></p></li>
+<li><p>Save the change and commit it (you can do this your web-browser of course):</p></li>
+<li>Now push your changes to GitHub and KEEP your eye on Jenkins</li>
+<li>Almost instantly you should see that a new job has been started for your hello-world-jenkins project in Jenkins</li>
+<li>Congrats .. your continuous integration works!</li>
+<li>On Jenkins’ main page, you'll see a list your projects (currently it has only one project) and there is a column called <code>Last Success</code> .. the name is self-explanatory .. and it displays build numbers</li>
+<li>Click on any number to see more details about this build</li>
+<li>You can view the output by clicking on <code>Console Output</code></li>
+<li>BTW, you can actually build manually by clicking the “Schedule a build” button next you your project on Jenkins’ main page (clock and green play symbols) </li>
+</ul>
+
+<h2>How to add Dockerfile from github</h2>
+
+<ul>
+<li><p>To Install Docker, use:
+<code>sudo apt install docker.io</code></p></li>
+<li><p>Add the user to the docker group</p></li>
+<li><p>Add the docker group if it doesn't already exist:
+<code>sudo groupadd docker</code></p></li>
+<li><p>Add the connected user <code>${USER}</code> to the docker group:
+<code>sudo gpasswd -a ${USER} docker</code></p></li>
+<li><p>Restart the Docker daemon:
+<code>sudo service docker restart</code></p></li>
+<li><p>Either do a <code>newgrp docker</code> or log out/in to activate the changes to groups.</p></li>
+<li><p>In your Ubuntu terminal create a directory <code>JavaHelloWorld</code> and cd into it</p></li>
+<li>Make sure you have the HelloWorld.java file in this directory</li>
+<li>Create a file and name it <code>Dockerfile</code></li>
+<li>Add the following to the Dockerfile:
+```
+FROM java
+MAINTAINER Noureddin Sadawi, noureddin@somemail.com</li>
+</ul>
+
+<p>ADD HelloWorld.java /
+ENTRYPOINT ["javac","HelloWorld.java"]
+```
+- This will instruct docker to use the java base image, register you as a maintainer
+- It will add the HelloWorld.java to Docker's root directory
+- And it will run: javac HelloWorld.java as soon as the docker image is run!
+- Now the HelloWorld.class file will be in your docker image's root directory.
+(More exciting and interesting things can be done with docker and I am only giving a very very basic intro here!)</p>
+
+<ul>
+<li>Build your docker image with:
+<code>docker build -t javahelloworld .</code></li>
+<li><p>Yeah, that dot needs to be there!</p></li>
+<li><p>Run it with:
+<code>docker run -it javahelloworld</code></p></li>
+<li><p>Congrats .. you've built and run a simple docker image</p></li>
+<li>Now add the Dockerfile and HelloWorld.java to github</li>
+<li>Create a new free style Jenkins project (see previous steps) and provide the git repository as we did before.</li>
+<li>The following steps are adapted from: <code>https://github.com/phnmnl/workflow-demo</code></li>
+<li><p>Check <code>Build when a change is pushed to GitHub</code></p></li>
+<li><p>Click on <code>Add build step</code>, choose <code>Execute Docker command</code>, and select the <code>Create/build image</code> command</p></li>
+<li>Add the <code>Build context folder</code>, that is the folder where the Docker context is saved</li>
+<li>Setting this field to <code>$WORKSPACE</code> is enough if you saved the Docker context in the root of your github repository</li>
+<li>If you saved the Docker context in a different folder, you need to specify the path to it (e.g. <code>$WORKSPACE/context</code>)</li>
+<li>It is also very important to name the <code>Tag of the resulting docker image</code> properly. In fact, to successfully push to DockerHub, the tag will have to be in the form: <code>&lt;dockerhub-user&gt;/servicename</code></li>
+<li>To push the resulting image to GitHub, add another build step, but this time select the <code>Push image</code></li>
+<li>Then, specify the <code>Name of the image to push</code>, that is dockerhub-user/servicename, and the <code>Docker registry URL: https://index.docker.io/v1/</code></li>
+<li>You need to provide the credentials for the dockerhub-user that you specified</li>
+<li>In order to do that click on <code>Add</code>, next to <code>Registry credentials</code>, fill up the form that will show up, and finally select the credentials that you just created. </li>
+</ul>
+
+<p>Results will be automatically pushed to PhenoMeNal docker registry and will be available instantly for pulling / download</p>
+
+<h1>How to add your software tool to Jenkins</h1>
+
+<p>step-by-step instructions
+Important project configuration parameters in Jenkins (with screenshots!)</p>

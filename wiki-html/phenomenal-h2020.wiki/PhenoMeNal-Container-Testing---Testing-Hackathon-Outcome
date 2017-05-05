@@ -1,0 +1,68 @@
+<h1>Testing Hackathon</h1>
+
+<p>During 15 and 16 of November 2016, the PhenoMeNal consortium held the first container testing hackathon at EMBL-EBI in Cambridge. During this meeting we discussed how to test our container and how to implement that testing. Here we document the final agreement reached within the consortium for testing.</p>
+
+<h2>Quickstart</h2>
+
+<p>For the different proposals, keep reading this document. Implementation guides for some of these proposals are <a href="Testing-Guide-Proposal-3">here</a>. </p>
+
+<h1>Testing specification</h1>
+
+<p>We recommend to have to levels of testing; a first lightweight test that happens after the container being built and before is being pushed to the docker registry, and a second set of more CPU/IO intensive tests that run on the container orchestrator (or wherever other infrastructures would consider relevant) after the image has been pushed to the registry.</p>
+
+<h2>Lightweight tests before container push</h2>
+
+<p>Right after building the container, we propose to execute simple tests, like for instance check that the binary is available, can be executed, and/or that running it without arguments doesn't produce an error code. All the binaries required for testing should be specified on a yaml file, which the jenkins jobs will aim to execute using the container. An example of this can be see on the <a href="http://phenomenal-h2020.eu/jenkins/job/container-lcmsmatching/">lcmsmatching job</a> in the PhenoMeNal Jenkins.</p>
+
+<p>Once this test is successful, we push the image to the docker registry, and proceed with the second test on the container orchestrator.</p>
+
+<h2>Run tests as container orchestrator jobs (run based)</h2>
+
+<p>For the detailed guide go <a href="Testing-Guide-Proposal-3">here</a>.</p>
+
+<p>Create tests as container orchestrator runs, using the ability of the container orchestrator to treat the container as an environment (hence, you can run multiple commands). Based on the idea of proposal 5, we inject the testing logic into the original container (but this is not executed when building, hence doesn't increase the size of the container) as bash scripts.</p>
+
+<pre><code>FROM ubuntu:16.04
+MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+
+# install packages required to run app
+RUN apt-get update &amp;&amp; apt-get install -y \
+    "&lt;app runtime=""&gt; and &lt;dependencies&gt;" \  # add app runtime and required packages
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# copy app files
+COPY app app
+COPY run.sh run.sh
+
+# copy test logic
+ADD runTest1.sh /usr/local/bin/runTest1.sh
+RUN chmod +x /usr/local/bin/runTest1.sh
+ADD runTest1.sh /usr/local/bin/runTest2.sh
+RUN chmod +x /usr/local/bin/runTest2.sh
+
+# main app entrypoint
+...
+</code></pre>
+
+<p>Then after this has been built and pushed to the docker registry, it can be run in the container orchestrator executing the <code>runTest1.sh</code> and <code>runTest2.sh</code>, possibly through separate Jenkins jobs for granularity.
+<img src="images/testing-guide/testing-in-k8s.png" alt="testing-containers-in-the-orchestrator" /></p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>Can be naturally outsourced to the container orchestrator for heavy computation.</li>
+<li>It tests the container very much in the same context that it should see on a production environment (being pulled from a registry, run inside the container orchestration, receiving a command and possibly mounting volumes if needed).</li>
+<li>Doesn't require extra Dockefile (as in the build based cases) nor repos.</li>
+</ul>
+
+<h3>Cons</h3>
+
+<ul>
+<li>Might require additional effort to add as a job in the CI.</li>
+</ul>
+
+<h1>Deprecated proposals</h1>
+
+<p>Here are the <a href="deprecated-proposals">deprecated proposals</a>.</p>
+
+<h1>Integration testing (multiple containers working together)</h1>

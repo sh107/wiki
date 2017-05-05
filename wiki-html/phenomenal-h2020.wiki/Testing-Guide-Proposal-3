@@ -1,0 +1,143 @@
+<h1>Guide for adding tests to run on the container orchestrator</h1>
+
+<p>In this type of implementation for testing containers, we execute the test by running the container to be tested on the Kubernetes container orchestrator. Running on the container orchestrator means that we replicate as much as possible a production environment, while allowing at the same time for more CPU/IO intensive testing that what we could achieve on the Jenkins slaves. We propose to store the logic of the test (ie. the code to retrieve test data and execute the test) in a bash script inside the original container, avoiding a secondary container and associated git repo. The following figure illustrates the complete cycle.
+<img src="images/testing-guide/testing-in-k8s.png" alt="testing-containers-in-the-orchestrator" /></p>
+
+<p>Following steps assume some level of understanding of bash scripting, usage of git and Docker to build a container.</p>
+
+<h2>Add testing logic to original container</h2>
+
+<p>Here we will add the testing steps, including data download, to a bash script. We will then add this bash script with the test steps to the original container that we want to test. Please note that the mere addition of the test bash script doesn't imply its execution on the original container, hence none of the data or additionally required packages will be added to the container. Only the text file containing the script will be added, which is negible in terms of size.</p>
+
+<p>Now we will add all the logic of the test to the original container, this will be shown through an example with container-mzml2isa:</p>
+
+<ul>
+<li>Go to the local version of the container git repository that you intend to test
+<ul>
+<li>Clone it if you don't have it locally, for this example, that would be <code>git clone https://github.com/phnmnl/container-mzml2isa</code> or through your favourite git client.</li>
+<li>If you had it previously, make sure that you're in the correct branch and up-to-date, which for this example would be:</li>
+</ul></li>
+</ul>
+
+<pre><code>cd container-mzml2isa
+git checkout develop
+git pull
+</code></pre>
+
+<ul>
+<li><strong>Optional Git-flow</strong> (if you do these, then you need to stick to git flow (<a href="http://danielkummer.github.io/git-flow-cheatsheet/">cheatsheet</a>) for the rest of the tutorial, unless that you understand git enough to get out of it): 
+<ul>
+<li>Init the repository for git flow if it hasn't been initialized</li>
+<li>Start a new feature for adding the test logic.
+```
+git flow init
+<h1>and answer with the defaults</h1></li>
+</ul></li>
+</ul>
+
+<h1>then, start the new feature</h1>
+
+<p>git flow feature start addTest1
+```</p>
+
+<ul>
+<li>Create a <code>runTest1.sh</code> file with your testing logic, for this example, I wrote:</li>
+</ul>
+
+<pre><code>#!/bin/bash
+
+# Get any dependencies needed for the testing part
+apt-get update &amp;&amp; apt-get install -y --no-install-recommends wget
+
+# Get the data needed for testing
+wget --no-check-certificate https://github.com/ISA-tools/mzml2isa-galaxy/raw/master/galaxy/mzml2isa/test-data/metabolomics_study.zip
+
+# Prepare the environment (create necessary folders, uncompress files if needed, etc.)
+mkdir /tmp/study-dir
+
+# Run the tool with the test data
+wrapper.py -html_file /tmp/study-dir/index.html -inputzip metabolomics_study.zip -out_dir /tmp/study-dir -study_title "test-study"
+
+# Check that files were created/correctness
+if ! [ -e "/tmp/study-dir/index.html" ]; then
+    echo "HTML file doesn't exist"
+    exit 1
+fi
+
+if ! [ -e "/tmp/study-dir/test-study/i_Investigation.txt" ]; then
+    echo "ISA investigation file not found"
+    exit 1
+fi
+
+echo "All files created successfully"
+</code></pre>
+
+<ul>
+<li>Add file to the git repo: <code>git add runTest1.sh</code></li>
+<li>Add file to the Dockerfile in the path and make it executable. For this example, I added the following to the Dockerfile:</li>
+</ul>
+
+<pre><code>ADD runTest1.sh /usr/local/bin/runTest1.sh
+RUN chmod +x /usr/local/bin/runTest1.sh
+</code></pre>
+
+<ul>
+<li>Make sure that you can build the Dockerfile locally. For this example </li>
+</ul>
+
+<pre><code>docker build -t pcm32/mzml2isa .
+</code></pre>
+
+<ul>
+<li>Check that your test script works in the container. For this example </li>
+</ul>
+
+<pre><code>docker run -it --entrypoint=runTest1.sh pcm32/mzml2isa
+</code></pre>
+
+<ul>
+<li>Add changes done to the Dockerfile for the commit: <code>git add Dockerfile</code></li>
+<li>Commit changes through the cli <code>git commit -m "Adds testing logic to container"</code> or other git client. </li>
+<li><strong>Optional Git-flow:</strong> close feature <code>git flow feature finish addTest1</code></li>
+<li>Push changes to the remote repository <code>git push</code>, or through your favourite git client.</li>
+<li>The image should be rebuilt in the <a href="http://phenomenal-h2020.eu/jenkins">PhenoMeNal Jenkins</a> instance on its own, and pushed to the registry. Check that the job is successful in Jenkins.</li>
+</ul>
+
+<h2>Create testing job in Jenkins</h2>
+
+<p>Now that we have embedded the testing logic on the original container, we will add this as a job in Jenkins to be executed on the Kubernetes container orchestrator, everytime after the original container is built. 
+As an explanation, what will happen now is that Jenkins, through its slaves, will run helm to deploy the test job based on environment variables that you will setup in the Jenkins job for testing your container.</p>
+
+<p>The following steps are meant to work on the <a href="http://phenomenal-h2020.eu/jenkins">PhenoMeNal Jenkins instance</a>, which has been configured for this.</p>
+
+<h3>Steps for Jenkins job</h3>
+
+<ul>
+<li>Create a new item, with name <code>test-your-tool-t3t1</code> (for this example <code>test-mzml2isa-t3t1</code>), copying existing item <code>test-template-type3</code>, as shown below. Press "Ok".
+<img src="images/testing-guide/config-job-t3-1.png" alt="create-test-type3-s1" /></li>
+<li>On the following page, go to <code>Build triggers</code> check <code>Build after other projects are built</code> and add the name of the project that normally builds the container that you want to test.
+<img src="images/testing-guide/config-job-t3-2.png" alt="create-test-type3-s2" /></li>
+<li>Go to <code>Build -&gt; Inject environment variables</code> and set the following environment variables on the text field accordingly (values for this example shown):
+<ul>
+<li><code>POD_PREFIX=mzml2isa</code> in your case it should match your tool name</li>
+<li><code>CONTAINER=container-registry.phenomenal-h2020.eu/phnmnl/mzml2isa:latest</code> in you case it should match your container.</li>
+<li><code>TEST_CMD=runTest1.sh</code> This one needs to match the test script that you added to the container and that you want to execute.
+<img src="images/testing-guide/config-job-t3-3.png" alt="create-test-type3-s3" /></li>
+</ul></li>
+<li>Press "Apply" and then "Save"</li>
+</ul>
+
+<p>Finally, if you either make a commit to your container, or just build it manually, this test should be triggered after it.</p>
+
+<h2>For reference, how does it work</h2>
+
+<p>Just for reference, as you don't need to replicate any of the following points, for this to work, we have previously set up on our Jenkins instance:</p>
+
+<ul>
+<li>Jenkins slave nodes with the ability to execute <code>kubectl</code>, to be able to trigger executions on Kubernetes clusters.</li>
+<li>Added the Kubernetes cluster config file containing all necessary keys/certificates as a secret file on Jenkins.</li>
+<li>Added the <a href="https://github.com/kubernetes/helm">helm</a> client to slaves, and initialised helm on slaves to talk to the cluster. Helm is a package manager for Kubernetes.</li>
+<li>Created a helm template repo on https://phnmnl.github.io/helm-charts (not human viewable).</li>
+<li>Created a <a href="https://github.com/phnmnl/helm-charts/blob/master/container-test/templates/pod_for_tests.yaml">pod template</a> for our test jobs.</li>
+<li>Created a <a href="https://github.com/phnmnl/jenkins-scripts/blob/develop/helm-k8s-test-runner/runWithHelm.sh">bash script</a> to execute everything, which uses environment variables that you will set up in Jenkins. This is downloaded by Jenkins for you to the slaves.</li>
+</ul>

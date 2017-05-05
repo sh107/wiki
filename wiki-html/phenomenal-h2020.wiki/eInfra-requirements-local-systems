@@ -1,0 +1,32 @@
+<h1>E-infrastructure requirements for deploying PhenoMeNal Virtual Research Environments (VRE) to local systems</h1>
+
+<p>Version 1.0 (<a href="https://github.com/phnmnl/phenomenal-h2020/wiki/eInfra-requirements-local-systems/_history">previous versions</a>)</p>
+
+<h2>Summary</h2>
+
+<p>This document describes the IT requirements to provision the PhenoMeNal e-infrastructure or parts thereof in your local compute center or IT-infrastructure. It is a living document that evolves over time. Deployment on public cloud infrastructures such as Google Cloud Environment (GCE) or AWS will be described elsewhere. Provisioning PhenoMeNal VRE on a local system requires either a dedicated standalone server, or an OpenStack (www.openstack.com) private cloud installation.</p>
+
+<h2>Introduction</h2>
+
+<p>PhenoMeNal Virtual Research Environment (VRE) is a platform for data analysis in Metabolomics and metabolic phenotyping, implemented using a microservice-oriented architecture. It enables and promotes the construction of scalable and reproducible workflows for data analysis.</p>
+
+<h2>Hardware Requirements</h2>
+
+<p>The hardware requirements needed to run the PhenoMeNal e-infrastructure in your local compute environment obviously depend on the tasks that you intend to perform. A small test version of PhenoMeNal can run on just a single node whereas installations for large scale data processing will require state of the art compute clusters with tens, hundreds or thousands of nodes, depending on the scale. As soon as sufficient data on the scaling of PhenoMeNal compute workflows have been gathered, we will provide more detailed information in this location.</p>
+
+<h2>Contextualization</h2>
+
+<p>Provisioning of PhenoMeNal VREs consists of running cloud contextualization tools to spawn compute nodes, configure networks, attach storage, install the necessary software etc. In PhenoMeNal we use Terraform (http://terraform.io) to provision the host clouds, Ansible (http://www.ansible.com) to provision the instances and Packer (http://packer.io) to create the immutable images.</p>
+
+<h2>Requirements for OpenStack</h2>
+
+<p>OpenStack provides the API endpoints that Terrafrom needs to talk to, in order to fire up the infrastructure. A detailed list of these endpoints is available on: https://www.terraform.io/docs/providers/openstack/index.html. 
+In order to install OpenStack, please refer to the extensive OpenStack documentation at www.openstack.com.</p>
+
+<h2>Requirements for standalone server</h2>
+
+<p>Information for how to provision PhenoMeNal VRE on a standalone server will be available soon.</p>
+
+<h3>Contact:</h3>
+
+<p>Ola Spjuth <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#x6f;&#58;&#x6f;&#x6c;&#x61;&#46;&#x73;p&#x6a;&#117;&#116;&#x68;&#x40;&#x66;&#x61;&#x72;&#109;&#98;&#x69;&#111;&#x2e;&#117;&#117;&#46;&#115;&#101;">&#x6f;&#x6c;&#x61;&#46;&#x73;p&#x6a;&#117;&#116;&#x68;&#x40;&#x66;&#x61;&#x72;&#109;&#98;&#x69;&#111;&#x2e;&#117;&#117;&#46;&#115;&#101;</a>, PhenoMeNal WP5 leader</p>

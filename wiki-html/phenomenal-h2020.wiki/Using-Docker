@@ -1,0 +1,148 @@
+<h1>Using Docker</h1>
+
+<h2>Docker images</h2>
+
+<h3>The concept</h3>
+
+<p>To avoid building docker containers every time they are started, pre-built docker images can be prepared. These docker images can then be shared on the host, between several hosts, between users within the PhenoMeNal infrastructure or with anybody. In addition to that, docker images can be registered in a docker registry, which can be configured to be accessed from anywhere within the intended infrastructure. Docker images can also be pushed and pulled from public registries such as <a href="https://hub.docker.com/">dockerhub</a>, <a href="https://quay.io/">quay.io</a> or the <a href="https://container-registry.phenomenal-h2020.eu/">PhenoMeNal docker registry</a>.</p>
+
+<p>Within PhenoMeNal we aim at providing our own PhenoMeNal docker registry. PhenoMeNal developers can push their images to our docker registry, although this is done by the continuous integration (CI) server, after the developer has pushed a change of his dockerfile to the github repo (which in turn was previously registered with the CI server). Our registry is intended to allow infrastructure users/developers to pull images. Currently, this can be done from <a href="https://container-registry.phenomenal-h2020.eu">https://container-registry.phenomenal-h2020.eu</a> (pull is passwordless, push requires authentication and only allowed from the continous integration server).</p>
+
+<h3>Search for docker images</h3>
+
+<p>Before pulling a docker image, you may want to search for it first.</p>
+
+<pre><code>docker search &lt;name:tag&gt;
+docker search galaxy
+</code></pre>
+
+<p>List all docker images in PhenoMeNal docker registry:</p>
+
+<pre><code>docker search container-registry.phenomenal-h2020.eu
+</code></pre>
+
+<h3>Pull images</h3>
+
+<p>The aim of PhenoMeNal is to provide pre-built docker images in that way the users only have to pull the images to be able to just starting them without worrying about the underlying complexity of the used tools. Users are also able to pull certain versions by supplying a tag.</p>
+
+<pre><code>docker pull &lt;name:tag&gt;
+docker pull debian:jessie
+</code></pre>
+
+<p>Example how to pull an image from our registry:</p>
+
+<pre><code>docker pull container-registry.phenomenal-h2020.eu/phnmnl/&lt;image_name:tag&gt;
+</code></pre>
+
+<p>Where tag, again, is optional.</p>
+
+<h3>Push images</h3>
+
+<p>Having built a docker container from an updated Dockerfile, changes should be committed. After committing, the image can be prepared to be shared between users, or pushed to the PhenoMeNal docker registry.</p>
+
+<pre><code>docker commit &lt;name-of-docker-container&gt;
+docker save -o &lt;name.tar&gt; &lt;name-of-docker-image&gt;
+docker push …
+</code></pre>
+
+<p>However, the intended use is that the pushing of docker images is done by the CI server (actually, authentication for pushing to the phenomenal repo will only be given to admins of the CI). The developer should make sure that his dockerfile is being watched by the CI system (jenkins).</p>
+
+<h3>The underlying overlay filesystem 'aufs'</h3>
+
+<p>Aufs is the underlying file system of Docker on most distributions, although it is currently not part of the mainstream linux kernel. It’s use is highly recommended with using docker. Aufs builds layers on top of the existing file system (on most linux systems ext3 or ext4). Each of the layer has a unique id and the content of the layer(s) are shared between the dockers. As a result, building dockers is much faster and file system usage is minimized as the docker images share their mutual content and only save changes independently from each other.</p>
+
+<h3>Remove and clean-up images</h3>
+
+<p>After a lot of testing and building, the aufs may contain lots of different file system states that are not needed anymore. Unused images can be removed with the following command:</p>
+
+<pre><code>docker rmi $(docker images | grep '^&lt;none&gt;' | awk '{print $3}')
+</code></pre>
+
+<h2>Docker containers</h2>
+
+<h3>The concept</h3>
+
+<p>Docker containers represent single instances of docker images. They can be running, started or stopped. The concept of a containers is very similar to an application which is bundled with the single executable “exe”-file plus additional files which are needed by the application.</p>
+
+<p>In contrast to applications, however, docker containers are isolated from the host very similar to virtual machines but without the clutter as containers use the same binary interface provided by the operating system.</p>
+
+<p>If the running docker is compromised by a security exploit, only the content within the container-image is being affected, not the host the container is running on. Thus, running applications in containers also has positive security aspects.
+In order to connect with the outside world, containers can be configured to share filesystems with the host or with each other. In addition, ports can be shared between dockers and be opened and forwarded automatically to provide internet services.</p>
+
+<h3>Status of containers</h3>
+
+<p>The status of running containers can be shown with the command. The overview also displays ports which are forwarded to the outside. Any container has a unique container id. If no name was specified before, a random name will be chosen by docker. Also displayed will be the image the container is being built upon.</p>
+
+<pre><code>$ docker ps 
+CONTAINER ID   IMAGE   COMMAND              CREATED      STATUS         PORTS                    NAMES
+ae830a1389d1   metfam  "/usr/bin/shiny-se"  3 days ago   Up 18 hours    0.0.0.0:9001-&gt;3838/tcp   metfam-run
+</code></pre>
+
+<p>The status of all running containers + stopped or exited containers can also be displayed.</p>
+
+<pre><code>$ docker ps -a
+CONTAINER ID   IMAGE   COMMAND              CREATED      STATUS         PORTS                    NAMES
+ae830a1389d1   metfam  "/usr/bin/shiny-se"  3 days ago   Up 18 hours    0.0.0.0:9001-&gt;3838/tcp   metfam-run
+69ecd5a69f95   galaxy  "/usr/bin/startup"   2 days ago   Exited (137) 18 hours ago               thirsty_bar
+</code></pre>
+
+<h3>Create/Start containers</h3>
+
+<p>There may be many ways container can be first started as the options also reflect part of the underlying infrastructure. Most importantly, shared file system between the host and the docker, as well as ports are supplied in the command line. A basic example:</p>
+
+<pre><code>docker run --publish=8080:80 --log-driver=syslog --volume=/home:/home:rw \ 
+    --volume=/mnt:/mnt:ro --name="debian-run" -i -t -d debian
+</code></pre>
+
+<p>Containers can be started interactive (option -i) or as a daemon in the background (option -d). Sometimes it is necessary to detach running containers. This can be achieved by pressing CTRL-P and CTRL-Q.</p>
+
+<p>Stopped docker containers can be started much easier. The state of stopped containers are saved by docker. The mechanisms involved can be compared to a suspended laptop whose lit has been closed.</p>
+
+<pre><code>docker stop debian-run
+docker start debian-run
+</code></pre>
+
+<h3>Create more than one instance of containers</h3>
+
+<p>Although it is possible and intended to run several instances of containers, in PhenoMeNal we use orchestration frameworks such as docker-compose, kubernetes and Mesos (see below), which automate the process.</p>
+
+<pre><code>for ((i=1;i&lt;=9;i++)); do
+     docker run --publish=$[$PORT_PUB+$i]:${PORT_DOCKER} --log-driver=syslog \
+     --volume="/vol/phenomenal/workshop:/workshop:ro" \
+     --name="${NAME}-run-$i" -i -t -d $NAME
+done
+</code></pre>
+
+<h3>See the output of containers</h3>
+
+<pre><code>docker logs &lt;container&gt;
+</code></pre>
+
+<h3>Enter running containers</h3>
+
+<p>For several reasons, it is feasible to enter running or even stopped containers. This can be achieved with the following commands.</p>
+
+<p>Start shell inside running docker:</p>
+
+<pre><code>docker exec -i -t debian-run /bin/bash
+</code></pre>
+
+<p>Start stopped or failed container with different entrypoint:</p>
+
+<pre><code>docker run -ti --entrypoint=/bin/bash debian-run
+</code></pre>
+
+<h3>Stop and remove containers</h3>
+
+<p>Accordingly, containers can be stopped and removed from docker.</p>
+
+<pre><code>docker stop debian-run
+docker rm debian-run
+</code></pre>
+
+<h3>Remove and clean-up containers</h3>
+
+<p>After a lot of testing and running, docker may contain lots of different stopped containers that are not needed anymore. Unused (not running, stopped, exited) containers can be removed with the following command:</p>
+
+<pre><code>docker rm $(docker ps -a -f status=exited | grep -v CONTAINER\ ID | awk '{print $1}')
+</code></pre>

@@ -1,0 +1,44 @@
+<h1>Download requirements</h1>
+
+<p>Open the PowerShell.</p>
+
+<p>Download <code>kubectl</code>:</p>
+
+<pre><code>wget https://storage.googleapis.com/kubernetes-release/release/v1.3.1/bin/windows/amd64/kubectl.exe -OutFile kubectl.exe
+</code></pre>
+
+<p>Download <code>mini-kube</code> from the official <a href="https://github.com/kubernetes/minikube/releases">github repo</a> and follow the Windows specific installations instructions there.</p>
+
+<p>If you have administrator rights, please install a recent version of VirtualBox for Windows. Otherwise, please ask an administrator to do this.</p>
+
+<h1>Run mini-kube and deploy galaxy runtime</h1>
+
+<p>If you already have VirtualBox (otherwise, please install it, it might be good to have a recent version, so you might want to update yours), start mini-kube (standing on the same directory where the executable is; this step might require administrator privileges):</p>
+
+<pre><code>.\minikube-windows-amd64.exe start
+</code></pre>
+
+<p>Check that you can access the cluster</p>
+
+<pre><code>.\kubectl.exe cluster-info
+</code></pre>
+
+<p>you should get an output like this:
+```
+Kubernetes master is running at https://192.168.99.100:8443
+kubernetes-dashboard is running at https://192.168.99.100:8443/api/v1/proxy/namespaces/kube-system/services/kubernetes-d
+ashboard</p>
+
+<p>To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```</p>
+
+<p>If you don't see something like this, then set the the <code>$KUBECONFIG</code> environment variable by issuing</p>
+
+<pre><code>$env:KUBECONFIG = "C:\Users\&lt;your_username\.kube\config
+</code></pre>
+
+<p>which should have been created by <code>mini-kube</code>. Then try the <code>cluster-info</code> command again to check that you can get to it. </p>
+
+<h2>Deploy Galaxy with PhenoMeNal tools</h2>
+
+<p>Follow <a href="galaxy with k8s">this tutorial</a>, sticking to the running galaxy inside Kubernetes on minikube strategy, keeping in mind that when the tutorial says <code>kubectl</code> you might need to write <code>.\kubectl.exe</code>. Always stay in the same directory where the executables where downloaded, or othwerwise add them to your windows <code>$Path</code>. Remember that commands are always invoked from your PowerShell, you don't need to log into the mini-kube VM at all.</p>

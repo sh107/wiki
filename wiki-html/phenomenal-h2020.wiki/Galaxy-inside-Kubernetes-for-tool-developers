@@ -1,0 +1,186 @@
+<h1>Galaxy inside Kubernetes for tool developers</h1>
+
+<p>Here we explain the rationale happening behind the curtains when using the helm deployment for testing/developing Galaxy tool wrappers that call containerised software. You are not expected to follow this steps manually anymore, but they explain what in essence is happening when using the <a href="https://github.com/phnmnl/phenomenal-h2020/wiki/QuickStart-Installation-for-Local-PhenoMeNal-Workflow">Helm deployment</a> with the <code>development_folder</code> variable set.</p>
+
+<p>The following setup allows developers to run Galaxy inside Kubernetes, but injecting into it key files/folders that a developer might want to change:
+* Galaxy <code>config/config.ini</code>: general Galaxy settings configurations.
+* Galaxy <code>config/job_conf.xml</code>: where tools need to be associated to the Kubernetes runner. 
+* Galaxy <code>config/tool_conf.xml</code>: where tools order in the sidebar of galaxy is decided. Paths need to be coherent what what is used in the following option.
+* Galaxy <code>tools/phenomenal</code>: folder where we will add tools (the developer can populate this as desired, but needs to be coherent with <code>config/job_conf.xml</code>).</p>
+
+<p>Provided that the Persistent Volume, Persistent Volume Claim and the service have been created (this is done by the Helm deployment for you), consider the following <code>.yaml</code> template file for the replication controller, where the key section is what happens under <code>volumeMounts</code> and <code>volumes</code>:</p>
+
+<pre><code>apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: galaxy-k8s 
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+         app: galaxy-k8s
+    spec:
+      containers:
+      - name: galaxy-k8s
+        image: container-registry.phenomenal-h2020.eu/phnmnl/galaxy-k8s-runtime
+        command: ["/bin/bash","-c","mkdir -p /opt/galaxy_data/database-sqlite &amp;&amp; ./run.sh --daemon &amp;&amp; tail -f paster.log"]
+        lifecycle: 
+          preStop:
+            exec:
+               command:
+                   - "./run.sh"
+                   - "--stop"
+        ports:
+          - containerPort: 8080
+        volumeMounts:
+          - mountPath: "/opt/galaxy_data"
+            name: galaxy-pvc
+          - mountPath: "/galaxy/config/galaxy.ini"
+            name: galaxy-ini 
+          - mountPath: "/galaxy/config/job_conf.xml"
+            name: galaxy-job-conf 
+          - mountPath: "/galaxy/config/tool_conf.xml"
+            name: galaxy-tool-conf
+          - mountPath: "/galaxy/tools/phenomenal"
+            name: phenomenal-tools 
+      volumes:
+        - name: galaxy-pvc
+          persistentVolumeClaim:
+              claimName: galaxy-pvc
+        - name: galaxy-ini
+          hostPath:
+            path: [PATHTODEVFILES]/config/galaxy.ini
+        - name: galaxy-job-conf
+          hostPath:
+            path: [PATHTODEVFILES]/config/job_conf.xml
+        - name: galaxy-tool-conf
+          hostPath:
+            path: [PATHTODEVFILES]/config/tool_conf.xml
+        - name: phenomenal-tools
+          hostPath:
+            path: [PATHTODEVFILES]/tools/phenomenal
+</code></pre>
+
+<p>on deployment with the <code>development_folder</code> variable set, Helm with replace <code>[PATHTODEVFILES]</code> with the path which would allow us to reach the <code>config/galaxy.ini</code>, <code>config/job_conf.xml</code>, <code>config/tool_conf.xml</code> and the <code>tools/phenomenal</code> folder. As starting point, you can use the <code>config/job_conf.xml</code>, <code>config/tool_comf.xml</code> and <code>tools</code> folder available in this <a href="https://github.com/phnmnl/docker-galaxy-k8s-runtime/tree/develop">repo</a>.</p>
+
+<h2>Adding a tool</h2>
+
+<p>We would suggest having a single folder where you leave your config and tools folders, which could well be part of a complete Galaxy installation (Kubernetes will only mount the specified files to the Galaxy pod). For the sake of this documentation, we will suppose that this folder's path is <code>/Users/jdoe/galaxy_central_dev</code>.</p>
+
+<p>Supposing that you are developing a Galaxy wrapper for a tool called <code>MyTool</code>, these are the steps that you need to execute to make it visible inside Galaxy in Kubernetes:</p>
+
+<ul>
+<li>Copy (don't symlink) the wrapper to the tools/phenomenal folder. You can as well create a subsequent folder if your tools can be grouped somehow (for instance, NMR). Lets suppose for this example that <code>MyTool</code> is used for NMR data analysis:</li>
+</ul>
+
+<pre><code>GALAXY_ROOT=/Users/jdoe/galaxy_central_dev
+mkdir -p $GALAXY_ROOT/tools/phenomenal/nmr
+cp MyTool.xml $GALAXY_ROOT/tools/phenomenal/nmr/
+</code></pre>
+
+<ul>
+<li>Add a container destination for the tool on the <code>job_conf.xml</code> file on <code>$GALAXY_ROOT/config/job_conf.xml</code>:</li>
+</ul>
+
+<pre><code>...
+&lt;destinations default="local"&gt;
+        ...
+        &lt;destination id="MyTool-container" runner="k8s"&gt;
+            &lt;param id="docker_repo_override"&gt;container-registry.phenomenal-h2020.eu&lt;/param&gt;
+            &lt;param id="docker_owner_override"&gt;phnmnl&lt;/param&gt;
+            &lt;param id="docker_image_override"&gt;mytool-container&lt;/param&gt;
+            &lt;param id="docker_tag_override"&gt;latest&lt;/param&gt;
+            &lt;param id="max_pod_retrials"&gt;1&lt;/param&gt;
+            &lt;param id="docker_enabled"&gt;true&lt;/param&gt;
+        &lt;/destination&gt;
+        ...
+&lt;/destinations&gt;
+...
+</code></pre>
+
+<p>Alternatively, if you want to rely on the docker image set at the tool level, you just need to write:</p>
+
+<pre><code>...
+&lt;destinations default="local"&gt;
+        ...
+        &lt;destination id="MyTool-container" runner="k8s"&gt;
+            &lt;param id="max_pod_retrials"&gt;1&lt;/param&gt;
+            &lt;param id="docker_enabled"&gt;true&lt;/param&gt;
+        &lt;/destination&gt;
+        ...
+&lt;/destinations&gt;
+...
+</code></pre>
+
+<ul>
+<li>Assign the tool to the container destination just created on the same <code>job_conf.xml</code> file, inside the existing <code>&lt;tools&gt;</code> section:</li>
+</ul>
+
+<pre><code>...
+&lt;tools&gt;
+       ...
+       &lt;tool id="MyTool" destination="MyTool-container"/&gt;
+       ...
+&lt;/tools&gt;
+</code></pre>
+
+<ul>
+<li>Adds path to tool in the <code>tool_conf.xml</code> file, under the PhenoMeNal label, NMR section in this case (create if doesn't exist):</li>
+</ul>
+
+<pre><code>&lt;label id="phenomenal" text="PhenoMeNal H2020 Tools" /&gt;
+&lt;section name="NMR" id="pheno-nmr"&gt;
+  &lt;tool file="phenomenal/nmr/MyTool.xml"/&gt;
+&lt;/section&gt;
+</code></pre>
+
+<h3>Restarting Galaxy to pick up changes</h3>
+
+<p>To restart Galaxy inside Kubernetes you can either:</p>
+
+<ul>
+<li>Delete the pod that is running:</li>
+</ul>
+
+<pre><code># Find out the pods name
+$ kubectl get pods
+NAME               READY     STATUS    RESTARTS   AGE
+galaxy-k8s-8izfr   1/1       Running   0          11h
+# then delete it
+$ kubectl delete pods/galaxy-k8s-8izfr
+# This will force the replication controller to lift a new pod from the same definition, loading your files again.
+$ kubectl get pods
+NAME               READY     STATUS        RESTARTS   AGE
+galaxy-k8s-x4ed1   1/1       Running       0          41s
+galaxy-k8s-8izfr   1/1       Terminating   0          15m
+# galaxy-k8s-x4ed1 is lifted by the RC
+</code></pre>
+
+<ul>
+<li>Get into the running pod and restart the Galaxy daemon
+<code>bash
+$ kubectl exec -i -t galaxy-k8s-x4ed1 bash
+root@galaxy-k8s-x4ed1:/galaxy# ./run.sh --restart
+</code></li>
+</ul>
+
+<h1>Bring your tool to the public PhenoMeNal Galaxy instance</h1>
+
+<p>Once you have tested your tool intensively, it is ready to be used in the running public PhenoMeNal Galaxy instance and other PhenoMeNal deployments.</p>
+
+<p>For that, you should clone the <code>container-galaxy-k8s-runtime</code> repo, checkout the development branch, and either open a new feature through git flow or create a new branch (and switch to it).</p>
+
+<pre><code>$ git clone -b develop https://github.com/phnmnl/container-galaxy-k8s-runtime
+$ # create a new feature through git flow.
+$ git flow feature start myToolPhenoNMR
+$ # alternatively, simple create a new branch
+$ git checkout -b myToolPhenoNMRBranch
+</code></pre>
+
+<p>Next. You make the following changes:
+- First, add your tool xml to <a href="https://github.com/phnmnl/container-galaxy-k8s-runtime/tree/develop/tools/phenomenal">the appropriate Galaxy tool folder</a>.
+- Add your tool to the <a href="https://github.com/phnmnl/container-galaxy-k8s-runtime/tree/develop/config/job_conf.xml">config/job<em>conf.xml</a>, including setting destination container as explained.
+- Add your tool to the <a href="https://github.com/phnmnl/container-galaxy-k8s-runtime/tree/develop/config/tool_conf.xml">config/tool</em>conf.xml</a>.</p>
+
+<p>Finally, publish your changes by commiting and pushing to our Galaxy repo, or by pushing to your own fork. Once these changed are pushed, open a pull request to merge these changes into the development branch of our Galaxy repo.</p>

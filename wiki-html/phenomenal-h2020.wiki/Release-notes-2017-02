@@ -1,0 +1,57 @@
+<p>Release 2017-02 (beta) is the first public release of the PhenoMeNal services. It is the output of 1.5 years of the work conducted in the H2020 project <a href="http://phenomenal-h2020.eu/">PhenoMeNal</a> which stands for <strong>Pheno</strong>me and <strong>Me</strong>tabolome a<strong>Nal</strong>ysis. Although properly tested and monitored using our <a href="http://phenomenal-h2020.eu/jenkins/">continuous integration pipeline</a> it should be used with caution.</p>
+
+<h1>Services</h1>
+
+<p>| Service | Container | Tag | Maintainer | Affiliation | Docs |
+|------|-----------|-----|------------|-------------|------|
+|Galaxy|<a href="https://github.com/phnmnl/container-galaxy-k8s-runtime/tree/release/16.07-pheno">container-galaxy-k8s-runtime</a>|<a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-galaxy-k8s-runtime/59/">v16.07-pheno<em>cv0.1</a>|P. Moreno, L. Pireddu, P. Roger Mele|EMBL-EBI, CRS4, CEA||
+|Jupyter|<a href="https://github.com/phnmnl/container-jupyter/releases/tag/v387f29b6ca83_cv0.4">container-jupyter</a>|<a href="http://phenomenal-h2020.eu/jenkins/job/container-jupyter/7/">v387f29b6ca83</em>cv0.4</a>|P. Moreno, M. Capuccini|EMBL-EBI, Uppsala University||
+|Luigi|<a href="https://github.com/phnmnl/container-luigi/releases/tag/v2.6.0_cv0.1">container-luigi</a>|<a href="http://phenomenal-h2020.eu/jenkins/job/container-luigi/5/">v2.6.0_cv0.1</a>|Marco Capuccini|Uppsala University||</p>
+
+<h1>Container Tools</h1>
+
+<p>| Tool | Container | Tag | Maintainer | Affiliation | Docs |
+|------|-----------|-----|------------|-------------|------|
+| <a href="">batman</a> | <a href="https://github.com/phnmnl/container-batman/releases/tag/v1.2.1.0.7_cv1.0">container-batman</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-batman/34/">v1.2.1.0.7<em>cv1.0</a> | P. Moreno, J. Gao | EMBL-EBI, Imperial College London | |
+| <a href="https://github.com/leidenuniv-lacdr-abs/ms-vfetc/tree/v0.4">ms-vfetc</a> | <a href="https://github.com/phnmnl/container-ms-vfetc/commit/cd04be499d7a2de79e0e5f93075d6d2e65902323">container-ms-vfetc</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/UL%20team/job/container-ms-vfetc/10/">v0.4</em>cv1.3</a> | Michael van Vliet | Leiden University | <a href="https://github.com/leidenuniv-lacdr-abs/ms-vfetc/blob/v0.4/README.md">docs</a> |
+| <a href="">iso2flux</a> | <a href="https://github.com/phnmnl/container-iso2flux/releases/tag/v0.2_cv1.0">container-iso2flux</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-iso2flux/28/">v0.2<em>cv1.0</a> | Pablo Moreno | EMBL-EBI | |
+| <a href="">ramid</a> | <a href="https://github.com/phnmnl/container-ramid/releases/tag/v1.0_cv0.1">container-ramid</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-ramid/7">v1.0</em>cv0.1</a> | Pablo Moreno | EMBL-EBI | |
+| <a href="">midcor</a> | <a href="https://github.com/phnmnl/container-midcor/releases/tag/v1.0_cv0.2">container-midcor</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-midcor/32/">v1.0<em>cv0.2</a> | Pablo Moreno | EMBL-EBI | |
+| <a href="">mtbls-dwnloader</a> | <a href="https://github.com/phnmnl/container-scp-aspera/releases/tag/v3.5.4.102989-linux-64_cv0.1">container-scp-aspera</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-scp-aspera/5/">v3.5.4.102989-linux-64</em>cv0.1</a> | Pablo Moreno | EMBL-EBI | |
+| <a href="">nmrml2isa</a> | <a href="https://github.com/phnmnl/container-nmrml2isa/releases/tag/v0.3.0_cv0.1">container-nmrml2isa</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-nmrml2isa/10/">v0.3.0<em>cv0.1</a> | P. Moreno, T. Lawson | EMBL-EBI, U. of Birmingham | |
+| <a href="">mzml2isa</a> | <a href="https://github.com/phnmnl/container-mzml2isa/releases/tag/v0.4.28_cv0.2">container-mzml2isa</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-mzml2isa/23/">v0.4.28</em>cv0.2</a> | P. Moreno, K. Peters | EMBL-EBI, IPB Halle | |
+| <a href="">metfrag-cli</a> | <a href="https://github.com/phnmnl/container-metfrag-cli/releases/tag/v2.4.2_cv0.2">container-metfrag-cli</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-metfrag-cli/17/">v2.4.2<em>cv0.2</a> | Kristian Peters | IPB Halle | |
+| <a href="">w4m - MetaboLights Downloader</a> | <a href="https://github.com/phnmnl/container-mtbls-dwnld/releases/tag/v1.2.0_cv1.1">container-mtbls-dwnld</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-mtbls-dwnld/12/">v1.2.0</em>cv1.1</a> | Pierrick Roger Mele | CEA ||
+| <a href="">w4m - univariate</a> | <a href="https://github.com/phnmnl/container-univariate/releases/tag/v2.2.3_cv1.2">container-univariate</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-univariate/28/">v2.2.3<em>cv1.2</a> | Pierrick Roger Mele | CEA ||
+| <a href="">w4m - multivariate</a> | <a href="https://github.com/phnmnl/container-multivariate/releases/tag/v2.3.10_cv1.1">container-multivariate</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-multivariate/18/">v2.3.10</em>cv1.1</a> | Pierrick Roger Mele | CEA ||
+| <a href="">w4m - biosigner</a> |<a href="https://github.com/phnmnl/container-biosigner/releases/tag/v2.2.7_cv1.1">container-biosigner</a>|<a href="http://phenomenal-h2020.eu/jenkins/job/container-biosigner/12/">v2.2.7<em>cv1.1</a> | Pierrick Roger Mele | CEA ||
+| <a href="">w4m - LC/MS matching</a> |<a href="https://github.com/phnmnl/container-lcmsmatching/releases/tag/v3.1.6_cv1.3">container-lcmsmatching</a>|<a href="http://phenomenal-h2020.eu/jenkins/job/container-lcmsmatching/61/">v3.1.6</em>cv1.3</a>|Pierrick Roger Mele | CEA ||
+| <a href="">metabolite ID converter</a> | <a href="https://github.com/phnmnl/container-MetaboliteIDConverter/releases/tag/v0.5.1_cv1.0">container-MetaboliteIDConverter</a> | <a href="http://phenomenal-h2020.eu/jenkins/job/container-metaboliteidconverter/26/">v0.5.1<em>cv1.0</a> | Benjamin Merlet | INRA | |
+| <a href="">NMRMLConv</a> | <a href="https://github.com/phnmnl/container-nmrmlconv/releases/tag/v1.1b_cv0.1">container-nmrmlconv</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-nmrmlconv/31/">v1.1b</em>cv0.1</a> | Kristian Peters | IPB | |
+| <a href="">metfrag-cli</a> | <a href="https://github.com/phnmnl/container-metfrag-cli/releases/tag/v2.4.2_cv0.2">container-metfrag</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-metfrag-cli/17/">v2.4.2<em>cv0.2</a> | C. Ruttkies, K. Peters | IPB Halle | |
+| <a href="">xcms</a> | <a href="https://github.com/phnmnl/container-xcms/releases/tag/v1.50.1_cv0.4">container-xcms</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-xcms/37/">v1.50.1</em>cv0.4</a> | K. Peters, P. Moreno | IPB Halle, EMBL-EBI | |
+| <a href="">MetaboLights ASCP</a> | <a href="https://github.com/phnmnl/container-scp-aspera/releases/tag/v3.5.4.102989-linux-64_cv0.1">container-scp-aspera</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-scp-aspera/5/">v3.5.4.102989-linux-64<em>cv0.1</a> | Pablo Moreno | EMBL-EBI | |
+| <a href="">metabomatching</a> | <a href="https://github.com/phnmnl/container-metabomatching/releases/tag/release%2F0.3">container-metabomatching</a> | <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-metabomatching/29/">v0.1.0</em>cv0.3</a> | Rico Rueedi | Unil | |</p>
+
+<p>Note: maintainers are for containers, not necessarily tool authors.</p>
+
+<h1>Workflows</h1>
+
+<p>| Workflow | PI | Maintainer | Affiliation | Docs |
+| :-------- | :-------- | :-------- | :-------- | :-------- |
+| Sacurine workflow | <a href="https://github.com/ethevenot">Etienne Thévenot</a> | Pierrick Roger-Mele | <a href="http://www.cea.fr/">CEA</a> | <a href="https://github.com/phnmnl/phenomenal-h2020/wiki/Sacurine-statistical-workflow">docs</a> |
+| C13 Stationary Fluxomics | <a href="">Prof. Marta Cascante</a>| Pedro de Atauri, Pablo Moreno | <a href="http://www.ub.edu/web/ub/en/">Universitat de Barcelona</a>, <a href="http://www.ebi.ac.uk/">EMBL-EBI</a> |</p>
+
+<h1>Deployment systems</h1>
+
+<p>| Name | Version | Use case | Maintainer | Affiliation |
+| :--- | :------ | :------- | :--------- | :---------- | 
+| KubeNow | | Manual deployment on OpenStack, AWS, GCE | Marco Capuccini, Anders Larsson | Uppsala University |
+| EBI Portal | | Automates deployment of KubeNow on cloud providers | Jose Dianes, Amelie Cornelis, Dario Vianello, Gianni Dalla Torre  | EMBL-EBI |
+| PhenoMeNal VRE Gateway | | Automated deployment of KubeNow on cloud providers | Sijin He, Pablo Moreno, Kenneth Haug | EMBL-EBI |</p>
+
+<h1>Supported cloud providers</h1>
+
+<p>| Provider | Docs |
+| :-------- | :-------- |
+| <a href="https://cloud.google.com/">Google Cloud Platform</a> | <a href="https://github.com/phnmnl/phenomenal-h2020/wiki/Starting-PhenoMeNal-CRE-via-PhenoMeNal-Portal">portal</a>/<a href="https://github.com/phnmnl/phenomenal-h2020/wiki/Starting-a-PhenoMeNal-CRE-on-a-public-or-private-cloud-provider">direct</a> deployment  |</p>

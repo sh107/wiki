@@ -1,0 +1,159 @@
+<p>This QuickStart guide demonstrates how to set up PhenoMeNal Workflow in your local machine. </p>
+
+<h1>Overview</h1>
+
+<p>This QuickStart guide can help you to set up PhenoMeNal Workflows, based on Galaxy running top of Kubernetes, in your local machine.</p>
+
+<p>Try it out! Here is a link to an example public instance of the <a href="http://public.phenomenal-h2020.eu/">PhenoMeNal Workflow</a>, to get a grasp of what you would get locally.</p>
+
+<h1>Prerequisites</h1>
+
+<ul>
+<li>Linux or macOS: For a single machine development environment on Linux or macOS, currently the official Kubernetes recommendation is to use <a href="http://kubernetes.io/docs/getting-started-guides/minikube/">Mini-Kube</a>. This is the current preferred way.</li>
+<li>Windows: There is now experimental support on Windows for running mini-kube. Please see these temporary <a href="Windows-mini-kube">directions</a>.</li>
+<li>Full Administrator access (root / sudo on Linux, full Admin on Windows) to the computer for installing Mini-Kube. You can add your preferred user to the group docker for using Mini-Kube without root provileges.</li>
+<li>Before installing the PhenoMeNal Workflow, make sure that minikube is running and the command <code>minikube start</code> gives something like <code>Kubernetes is available at https://192.168.99.100:8443</code> as output.
+<ul>
+<li><strong>On Linux</strong>, use the following command to start minikube: </li>
+</ul></li>
+</ul>
+
+<pre><code># For linux only (this might be outdated)
+minikube start --iso-url=http://storage.googleapis.com/minikube/iso/minikube-v1.0.1.iso
+</code></pre>
+
+<h1>Deploy Galaxy using Helm</h1>
+
+<p>Helm is a package manager for Kubernetes. We have created a Helm package to easily deploy Galaxy on Kubernetes, both for production and for development mode. Helm has been blessed as an official Kubernetes project (lives under the Kubernetes organization in GitHub).</p>
+
+<h2>Additional pre-requisite</h2>
+
+<ul>
+<li>Install the Helm binary. You can find the latest releases for Mac, Linux and Windows <a href="https://github.com/kubernetes/helm/releases">here</a>.</li>
+<li>Once helm is on the path and made executable, init your Kubernetes cluster with Helm (supposes that you have a running cluster accessible through <code>kubectl</code> which is the case for minikube). This is run from your host machine, where you would run <code>kubectl</code>.</li>
+</ul>
+
+<pre><code>$ helm init
+</code></pre>
+
+<ul>
+<li>Add our Helm repo:</li>
+</ul>
+
+<pre><code>$ helm repo add galaxy-helm-repo https://pcm32.github.io/galaxy-helm-charts
+</code></pre>
+
+<p>If you delete your minikube VM with <code>minikube delete</code> for any reason, you will need to do the <code>helm init</code> step again. Otherwise, the above steps need to be done only once.</p>
+
+<h2>Deploy for developers in minikube</h2>
+
+<p>Here we deploy Galaxy using helm injecting a path where your Galaxy development files (config and tools) are sitting, through the <code>development_folder</code> variable. The <code>development_folder</code> variable needs to point to the folder where you have the Galaxy <code>config</code> and <code>tools</code> folders, for development purposes. This could be, for instance, the directory resulting from <code>git clone https://github.com/phnmnl/container-galaxy-k8s-runtime</code>, which will contain a <code>config</code> and a <code>tools</code> folder populated with the adequate files. <strong>The deployment will fail if you use a directory that doesn't contain the expected files.</strong>
+This setup will generate as well a Persistent Volume in minikube, inside <code>/data/galaxy-data</code> folder.</p>
+
+<p>Please note below that <code>jdoe</code> is the account for "John Doe", a fictional character, you need to replace that accordingly.</p>
+
+<h3>On macOS, user John Doe</h3>
+
+<pre><code>$ helm install --set development_folder=/Users/jdoe/Development/where-galaxy-config-tools-are,pv_minikube="yes" galaxy-helm-repo/galaxy
+</code></pre>
+
+<h3>On linux, user John Doe</h3>
+
+<p>Please note that when running on linux, the mount point inside the minikube VM changes from <code>/home</code> to <code>/hosthome</code> (so files on <code>/home/your-user/your-dev-files</code> would be visible on minikube and Kubernetes on <code>/hosthome/your-user/your-dev-files</code>) so the <code>development_folder</code> variable needs to be set accordingly on linux:</p>
+
+<pre><code>$ helm install --set development_folder=/hosthome/jdoe/Development/where-galaxy-config-tools-are,pv_minikube="yes" galaxy-helm-repo/galaxy
+</code></pre>
+
+<p>Please not the difference on the <strong>development_folder</strong> setting, unique to Linux.</p>
+
+<h3>On Windows, user John Doe</h3>
+
+<p>Please note that when running on Windows, the mount point inside the minikube VM changes from C:\Users to /c/Users (so files on C:\Users\your-user\your-dev-files would be visible on minikube and Kubernetes on /c/Users/your-user/your-dev-files) so the development_folder variable needs to be set accordingly on Windows:</p>
+
+<pre><code>$ helm install --set development_folder=/c/Users/jdoe/Development/where-galaxy-config-tools-are,pv_minikube="yes" galaxy-helm-repo/galaxy
+</code></pre>
+
+<p>Please not the difference on the <strong>development_folder</strong> setting, unique to Windows.</p>
+
+<h2>Deploy for users in minikube</h2>
+
+<p>This is an alternative to the previous, but instead we remove the <code>development_folder</code> variable:</p>
+
+<pre><code>$ helm install --set pv_minikube="yes" galaxy-helm-repo/galaxy
+</code></pre>
+
+<p>This is useful for demonstrations for instance.</p>
+
+<h2>Other options</h2>
+
+<p>To see other available options, see directly the Galaxy Helm chart documentation by invoking:</p>
+
+<pre><code>$ helm inspect galaxy-helm-repo/galaxy
+</code></pre>
+
+<h2>Accessing the Galaxy instance</h2>
+
+<p>Galaxy is now running on the computer-node you have installed PhenoMeNal and deployed Galaxy. You can test the running Galaxy instance with doing the following:</p>
+
+<pre><code>$ curl $(minikube ip):30700
+</code></pre>
+
+<p>Or just enter the IP address which the command <code>minikube ip</code> returns + Port 30700 in your webbrowser, usually it is: <code>http://192.168.99.100:30700</code> (please note, it is http and not https).</p>
+
+<h2>Bring down your Galaxy deployment with helm</h2>
+
+<p>First, check your active helm deployments:</p>
+
+<pre><code>$ helm list
+NAME            REVISION    UPDATED                     STATUS      CHART              
+tufted-heron    1           Mon Oct 24 15:10:21 2016    DEPLOYED    galaxy-simple-0.1.2
+</code></pre>
+
+<p>Then using the name of the deployment, for this example it would be:</p>
+
+<pre><code>$ helm delete tufted-heron
+</code></pre>
+
+<h1>Deploy Jupyter using Helm</h1>
+
+<p>Within PhenoMeNal, we also provide the ability to do some interactive data analysis through Jupyter in Python (2 or 3) and R. To lift Jupyter using Helm, you can use one of these alternatives:</p>
+
+<ul>
+<li>Deploy independently of Galaxy</li>
+<li>Deploy after Galaxy, sharing the PVC</li>
+</ul>
+
+<p>Make sure that you have the needed repo for Jupyter:</p>
+
+<pre><code>$ helm repo add phenomenal-helm https://phnmnl.github.io/helm-charts
+</code></pre>
+
+<p>if you previously had this, please update the repo with:</p>
+
+<pre><code>$ helm repo update
+</code></pre>
+
+<h2>Deploy Jupyter independently of Galaxy</h2>
+
+<p>You will need to set the password for Jupyter (through <code>passwd_jupyter</code>), the requirements in terms of CPU (<code>jupyter_resource_req_cpu</code>, keep it under 1 if deploying to minikube) and the requirements in terms of memory (<code>jupyter_resource_req_memory</code>, a few hundred MBs if deploying to minikube). If deploying on minikube, you can use <code>pv_minikube</code> variable to yes to activate a PersistenVolume based on host path.</p>
+
+<pre><code>helm install --set passwd_jupyter="your-pass",jupyter_resource_req_cpu=0.1,jupyter_resource_req_memory="100M",pv_minikube="yes" phenomenal-helm/jupyter
+</code></pre>
+
+<p>Resource requirement variables have defaults.</p>
+
+<h2>Deploy Jupyter after Galaxy, sharing PVC</h2>
+
+<p>If you have previously deployed Galaxy, you might want to re-use its Persistent Volume Claim for Jupyter. You can do so by adding the following variables:</p>
+
+<pre><code>$ helm install -set ...,jupyter_pvc="galaxy-pvc",pvc_exists="yes",.... phenomenal-helm/jupyter
+</code></pre>
+
+<p>For more variations available, check the output of:</p>
+
+<pre><code>$ helm inspect phenomenal-helm/jupyter
+</code></pre>
+
+<h2>Accessing Jupyter</h2>
+
+<p>Unless that you're using an ingress with a DNS strategy, you should be able to reach Jupyter on <code>echo http://$(minikube ip):30712</code>.</p>

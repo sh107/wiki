@@ -1,0 +1,17 @@
+<h1>Portal indexes</h1>
+
+<p>The <a href="http://portal.phenomenal-h2020.eu/home">PhenoMeNal CRE Portal</a> exposes a selected set of pages of this wiki, organised in the categories of User documentation, Tutorials and Developer documentation. To reflect this, there are three md files in the wiki, at the root directory, that contain these selections of entries:</p>
+
+<ul>
+<li><code>User-Documentation.md</code></li>
+<li><code>Developer-Documentation.md</code></li>
+<li><code>Tutorials.md</code></li>
+</ul>
+
+<p>Please do not delete or change those files, unless that you have been tasked with changing the contents to be shown on the portal. The portal expects on these files a list of labels and links like this:</p>
+
+<pre><code>- [Topic 1](link-to-file-topic1-in-wiki)
+- [Topic 2](link-to-file-topic2-in-wiki)
+</code></pre>
+
+<p>Anything different might not be displayed or outright break the portal integration (in which case the latest working snapshot taken by the portal is used until this is fixed).</p>

@@ -1,0 +1,4 @@
+<ul>
+<li>Generalize automation with ansible → deploy kubernetes-yaml-rules with ansible throughout the (local) cloud environment → ansible automatically does deployment of all the files + installs all needed packages + libraries !!!</li>
+<li>This is what we aim at with PhenoMeNal !!!</li>
+</ul>

@@ -1,0 +1,97 @@
+<h1>Guide to PhenoMeNal on OpenStack</h1>
+
+<h3>Prerequisites</h3>
+
+<p>You will need these softwares in order to create a PhenoMeNal installation on your OpenStack cloud.
+* Git
+* Packer
+* Terraform</p>
+
+<h2>Create the image</h2>
+
+<p>To be able to run OpenStack commands from your local computer, you need to set some environment variables on your computer. You do this by running the <em>source</em> command on an environment file containing the credentials of your specific OpenStack service and project. Most often your OpenStack service provides this from its dashboard.</p>
+
+<h3>Download OpenStack RC File</h3>
+
+<p>Login to your project dashboard and go to the project page. Go to the <em>Compute tab</em> and then <em>Access &amp; Security</em>. Within the <em>API Access</em> tab, click <em>Download OpenStack RC File</em>. When downloaded, move the file to your home folder. </p>
+
+<h3>Source OpenStack RC File</h3>
+
+<p>When using the <em>source</em> command on the downloaded file, the specific environment variables of your project and OpenStack service are integrated into the current computers shell. This means the client is now able to use commands to communicate with the OpenStack service and send instructions to the specific project. </p>
+
+<p>Firstly, make sure your working folder is the same as where the downloaded <em>OpenStack RC File</em> is placed (e.g. your <em>home</em> folder). Type </p>
+
+<p><code>source PROJECT-openrc.sh</code></p>
+
+<p>Replacing “PROJECT-openrc” with your downloaded file. Using this command will prompt you for an OpenStack password. This password is the same as the login-password for the user who downloaded the file from the dashboard. </p>
+
+<h3>Cloning PhenoMeNal Mantl repository</h3>
+
+<p>In order for your OpenStack instance to run PhenoMeNal, you will need to create, install and configure your virtual machines. The install and configure scripts can be found on the PhenoMeNal GitHub repository in the Mantl folder. If you have the Git command line tools installed you can simply copy the repository with a simple command. Firstly, navigate to your home folder and then type the following:</p>
+
+<p><code>git clone https://github.com/phnmnl/mantl.git</code></p>
+
+<p>This command downloads the necessary files for setting up your PhenoMeNal installation.</p>
+
+<h3>Building a PhenoMeNal Image</h3>
+
+<p>Navigate into the mantl folder that has been created in your home directory. We will now make use of Packer and its ability to create virtual images from configuration files. </p>
+
+<p>packer build packer/openstack-phnmnl.json</p>
+
+<p>Packer then starts a machine from the CentOS 7 image from your OpenStack provider and on top of it installs all the required software. This then creates a new immutable image with all of the software installed, from which new machines then can boot without having to go through all of the installation processes. </p>
+
+<h2>Preparing and launching instances</h2>
+
+<p>First you need to make use of an ssh-key. If you already have one configured you can skip this step. This is how you generate an ssh-key:</p>
+
+<p><code>mkdir ~/.ssh</code></p>
+
+<p><code>chmod 700 ~/.ssh</code></p>
+
+<p><code>ssh-keygen -t rsa</code></p>
+
+<h3>Creating and modifying terraform configuration file</h3>
+
+<p>In the next step we will use Terraform to start instances of the previously created PhenoMeNal image. But Terraform needs more information in order to tailor the infrastructure. This is supplied through configuration files ending with <code>.tf</code>. Variables and settings need to be changed within these <code>.tf</code> files, luckily there are templates so you don’t have to create them from scratch. </p>
+
+<p>Within the terraform folder there are several different templates. Copy the <code>openstack-module.sample.tf</code> to the mantl directory and name it whatever you want, preferably something related to your cloud provider.</p>
+
+<p><code>cp terraform/openstack-modules.sample.tf name.tf</code></p>
+
+<p>Open the file in your favorite text editor. 
+A lot of the information written within <code>name.tf</code> needs to be changed. </p>
+
+<ul>
+<li><p>Change the <code>name</code> variable to whatever you want the instance to show up as on OpenStack.</p></li>
+<li><p>Find the line that says <code>variable public_key</code> and change the path to one that points to the .ssh folder. For MacOS this would be /Users/username/.ssh/id<em>rsa.pub. For Linux it should simply be /home/username/.ssh/ida</em>rsa.pub.</p></li>
+<li><p>Change the <code>control</code>, <code>worker</code> and <code>edge</code> counts to whatever suits your needs. For testing purposes you can set control to 1, worker to 2 and edge to 1 in order to not consume too much resources. </p></li>
+<li><p>Change the <code>external_network_uuid</code> variable, which can be found on the dashboard.</p></li>
+<li><p>Change the <code>floating_ip_pool</code> variable, which is specific to your OpenStack installation.</p></li>
+<li><p>Change <code>image_name</code> to the name of the recently created image on OpenStack, this can be found on the dashboard.</p></li>
+<li><p>The <code>control_flavor_name</code>, <code>worker_flavor_name</code> and <code>edge_flavor_name</code> variables should be changed depending on your specific needs. These determine what resource configurations the virtual machines will have.</p></li>
+</ul>
+
+<p>You will also need a DNS-server to organize your virtual machines. CloudFlare can be used for this, however it will also need some configuration. You will need to configure your CloudFlare login email and token, this can be added to the RC to automatically configure when the <code>source</code> command is used. You will also have to add some variables to the terraform configuration file, so the virtual machines have access to a DNS. You can find all of the information needed on the CloudFlare website.</p>
+
+<h3>Launching the virtual machines</h3>
+
+<p>Now everything is configured. It can be a good idea to run <code>source PROJECT-openrc.sh</code> again to make sure every necessary variable is configured. Then move into the mantl folder and type the following command</p>
+
+<p><code>terraform get</code></p>
+
+<p>This is used to download and update the required modules. It will show errors if something is wrong, they are usually self-explanatory, like typos or wrong symbols. Then use</p>
+
+<p><code>terraform apply</code></p>
+
+<p>to start the instances on OpenStack. Now, you should be able to find the created machines on the Instance tab on the dashboard. It might take some time to get them started, but terraform will show a <code>Apply Complete</code>-message when everything is done (hopefully without issues). Then, while in the mantl folder, run </p>
+
+<p><code>./securitysetup</code></p>
+
+<p>It will prompt you to create a security password, and then create a security.yml file. You will now need to open the phnmnl-packaging.yml file within the same folder and change the <code>traefik_marathon_domain</code> variable to the same name you gave your project on openstack (the name variable in the .tf-file). Then type</p>
+
+<p><code>ansible-playbook phnmnl-packaging.yml -e @security.yml -e ‘ansible_ssh_user=centos’</code></p>
+
+<p>This makes use of the security.yml-file created with the last command and uses ansible to upgrade all of your running instances with the software they need. This will take a while, but because we already have created a base image it is much faster than installing every machine from scratch.</p>
+
+<p>You now have the PhenoMeNal e-infrastructure running on OpenStack.</p>

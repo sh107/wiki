@@ -1,0 +1,54 @@
+<p>The PhenoMeNal Cloud Research Environment (CRE) is a completely contained working environment launched on e.g. cloud resources or in-house servers that enables users (e.g. researchers) to carry out scalable and integrated metabolomics data analysis.</p>
+
+<p>The PhenoMeNal CRE consists of the following main components: <br />
+* Software tools which are standardised and wrapped as software containers
+* Standardised and interoperable data formats
+* Interfaces such as the Galaxy workflow engine and Jupyter Notebooks that can be used to consume and link tools in an analysis.</p>
+
+<h2>Introduction and architecture</h2>
+
+<p>The PhenoMeNal Cloud Research Environment (CRE) is designed as a microservice architecture, with services being implemented as VMIs and software containers (we use Docker in PhenoMeNal for containers). Most tools are available as containers, and they can be easily deployed without manual installation and dependency management, and containers can, in an elastic IT-environment, scale out to run analysis in parallel on multiple compute nodes. All technical details are transparent for the researcher. For the container orchestrator layer we use Kubernetes. For an overview of the architecture, see Figure X.</p>
+
+<p>The stack-based diagram below explains the PhenoMeNal architecture and chosen implementations:</p>
+
+<p><img src="images/architecture/PhenoMeNal_architecture.png" alt="PhenoMeNal Architecture" /></p>
+
+<p>Figure: The PhenoMeNal architecture (right) with selected implementations, depicted as a stack diagram and aligned to general microservice-based architectures (left).</p>
+
+<p>On the lowest level is the actual <strong>hardware</strong>; computer or a virtual <em>cloud</em> running on a cluster miles away. The user makes use of provisioning software to prepare and equip the virtual cluster with necessary software-layers. This often starts with a system kernel, which controls the very basics of the computer system. The kernel is the intermediary between the hardware (possibly virtual) and OS. It deals with resource management, load-balancing, runtime scheduling and more. Every single node runs its own kernel and OS, with a cluster OS layered on top as an abstraction-layer, making it appear as if all the nodes are part of one big computer. Combining the fundamental functions provided by the kernel with a Cluster OS of choice results in a virtual cluster with combined resources and the ability to split workloads between nodes as if they were all part of the same physical machine. The operating system then takes over and handles most of the communication.</p>
+
+<p>With the operating system in place the desired services can be installed. In order to be able to mount and run containers containing microservices, a container engine is needed. The main function of it is supporting the launching, scaling, management and termination of its auxiliary containers. It is through the <strong>container engines</strong> API that all container orchestration software operates.</p>
+
+<p><strong>Containers</strong> are pieces or parts of a program running within a closed virtual environment containing only the files needed for it to function. This makes a container entirely independent of the surrounding software environment, which is advantageous because it can be moved to and run on any operating system having the required container engine. In this use-case where microservices are wrapped up in software containers this means they are easy to add, remove and rearrange for the desired workflow.</p>
+
+<p>The microservices run within these containers are all independent functions, usually from existing software packages. Containerizing these functions comes with several benefits, where their quick launch is one of the most important. This results in fast and simple scalability as required, since additional virtual nodes can be added to the virtual cluster, provisioned with all the software needed and then supplied with the necessary container. In a fraction of the time it would take to build, configure and install additional physical machines, a virtual cluster can accommodate for heavier workloads.</p>
+
+<h3>The PhenoMeNal stack</h3>
+
+<p>PhenoMeNal is built to run on private machine as well as with any Infrastructure-as-a-Service-provider. <a href="https://kubernetes.io">Kubernetes</a> gathers the cluster of nodes to a single workspace and functions as its kernel and OS, and <a href="https://www.docker.com/">Docker</a> has been chosen as the container-environment of choice. The desired analysis functions are downloaded as small independent Docker containers and mounted through Kubernetes’ orchestration tools.</p>
+
+<h2>Deployment</h2>
+
+<p>PhenoMeNal has developed and uses <a href="https://github.com/phnmnl/kubenow">KubeNow</a> allowing to rapidly deploy, scale, and tear down your Kubernetes clusters on public and private cloud systems (e.g., AWS, GCE and OpenStack) as well as local clusters (<a href="https://www.vagrantup.com/">Vagrant</a>). KubeNow is a thin layer on top of existing established software (<a href="https://www.terraform.io/">Terraform</a>, <a href="https://www.packer.io/">Packer</a>, <a href="https://www.ansible.com/">Ansible</a> and <a href="https://kubernetes.io/docs/admin/kubeadm/">kubeadm</a>), see Figure below. By deploying a KubeNow cluster the user will get:</p>
+
+<ul>
+<li>A Kubernetes cluster up and running in less than 10 minutes (provisioned with kubeadm);</li>
+<li><a href="https://www.weave.works/">Weave networking</a>;</li>
+<li><a href="https://traefik.io/">Traefik</a> HTTP reverse proxy and load balancer;</li>
+<li><a href="https://www.cloudflare.com">Cloudflare</a> dynamic DNS integration;</li>
+<li><a href="https://www.gluster.org/">GlusterFS</a> distributed file system.</li>
+</ul>
+
+<p><img src="images/architecture/kubenow-comps.png" alt="PhenoMeNal components" />
+<strong>Figure:</strong> KubeNow delivers kubernetes clusters with dynamic DNS integration, networks, load balancing, and a distributed file system. KubeNow wraps around existing industry-standard tools and is used to deploy PhenoMeNal CREs.</p>
+
+<h2>Workflow orchestration</h2>
+
+<p>Apart from lifting a complete virtual infrastructure and setting up a kubernetes cluster, users of the PhenoMeNal VRE need interfaces and tools to work with the containerized software applications developed in WP9. PhenoMeNal uses the workflow environment <a href="https://galaxyproject.org">Galaxy</a> to support scheduling jobs as Docker containers on a Kubernetes cluster (a contribution that was merged upstream to the galaxy project). Galaxy is integrated into the main deployment process of the PhenoMeNal CRE, which means that users deploying a private PhenoMeNal immediately get a working instance of Galaxy that is secured for their own private usage only. The <a href="https://github.com/spotify/luigi">Luigi</a> workflow engine (developed by Spotify Inc) has also extended to support scheduling jobs on Kubernetes clusters consisting of containers, and is also available on the PhenoMeNal CRE. Also this contribution was pushed upstream to Spotify. For examples of workflows, see the corresponding section in the PhenoMeNal Wiki main page.</p>
+
+<h2>Provisioning of services</h2>
+
+<p>PhenoMeNal provisions services as containers in an scalable infrastructure and makes them easily available through workflow environments. Containers are written by individual tool developers with source published in code repositories (e.g. <a href="https://github.com">GitHub</a>). The <a href="http://phenomenal-h2020.eu/jenkins/">PhenoMeNal Continuous Integration System</a> pulls the source code, builds the containers, tests the containers, and if tests passes pushes them to container repositories such as Docker Hub and PhenoMeNal private container repository (see Figure below). From the CRE, these containers are made available for download and use from within the workflow engine (such as Galaxy) and can be scheduled inside the Kubernetes cluster.</p>
+
+<p><img src="images/architecture/ph-container-devel.png" alt="PhenoMeNal components" />
+<strong>Figure:</strong> Overview of the continuous development and operation in PhenoMeNal.</p>

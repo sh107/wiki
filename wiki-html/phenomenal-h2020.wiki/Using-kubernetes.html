@@ -1,0 +1,287 @@
+<p>DEPRECATED, please see <a href="http://kubernetes.io/docs/getting-started-guides/minikube/">mini-kube installation</a> instead.</p>
+
+<p>Docker composed based installation shouldn't be used anymore. That part should be removed or changed to mini-kube.</p>
+
+<p>Installation of kubernetes: Go to the following address and follow instructions:
+https://github.com/kubernetes/kubernetes/releases</p>
+
+<h1>Scaling services with kubernetes</h1>
+
+<p>Oftentimes it is needed to adapt running containers to high server loads or on user demand. This, among other things, can be achieved with kubernetes. Kubernetes is a container manager developed by Google. It is a follow-up on the development of Google’s Borg system.</p>
+
+<p>In comparison to docker-compose, kubernetes is organized differently:
+- One or more containers are organized in a unit called “Pod”. Each pod is assigned a unique IP within the kubernetes cluster framework.
+- Kubernetes also has so called “Controllers”, which can be replication controllers for launching one or more instances of pods called “Services” or “Jobs”. Whereas “Services” represent running services such as GALAXY, the latter represent short-running processes such as R-scripts that terminate after they have produced a result.</p>
+
+<p>This organization is a bit confusing, so let’s look at the core components implemented in kubernetes first. Each pod in kubernetes needs proper management in order to facilitate automation. In this regard, kubernetes is divided into several core components which represent a set of daemons to mediate between the pods, controllers and services seamlessly and are required for proper operation.</p>
+
+<p>K8s-master has 4 components:
+- TODO: k8s-master-127.0.0.1, choose one of: [controller-manager apiserver scheduler setup]
+- “kubelets”, which are a reminiscence on little chinese wooden cubes made out of bamboo. Within kubernetes, a kubelet is responsible for starting, stopping and maintaining pods very similar putting stickers on these chinese bamboo cubes. For instance, there are “etcd-kubelets” which are responsible for sticking configuration profiles onto pods and, thus, automating the configuration of pods. Which makes it a bit confusing at first is, that the “etcd-kubelet” itself is a running “etcd”-service inside a pod. Besides managing different configuration profiles, “etcd” also provides a distributed and replicated key-value data store management. It facilitates configuration of pods by sharing configuration between pods by avoiding redundancy problems. It uses service discovery and the REST-API. Configuration can be invoked with the command “etcdctl”, which is only needed in special cases, though.
+- “kube-proxy”, which is a kubernetes-specific amalgamation of a network proxy and load balancer. Basically, a kube-proxy does very similar things like the example on haproxy or nginx-proxy we did earlier with docker-compose, but it includes and automates the kubernetes-specific service abstraction along with other networking operations. It is also responsible for exposing services on each nodes.
+- “kube-scheduler”, which is basically a resource manager. We do not use this component within PhenoMeNal at the moment.
+- “kube-controller-manager”. A web-frontend for kubernetes that provides some statistical information and facilitates configuration. We do not use this component within PhenoMeNal at the moment.
+- “hyperkube”, which is also known as the master and is responsible for connecting the kubelets, kube-proxies, … with each other.</p>
+
+<p>In the following example (which can be found here) we deploy and scale several containers of GALAXY with kubernetes.
+First, start the needed core components. This is done with docker-compose. Please note that in our example each core component runs in a single container and is represented by it’s own pod.</p>
+
+<p><code>docker-compose -f k8s.yaml up -d</code></p>
+
+<p>The docker-compose executable looks for a k8s.yaml-file in the current directory. The k8s.yaml-file includes the instructions which core components should be started. The entire configuration is done with this yaml-file. Although you can start the docker containers manually, the descriptions in the yaml-file make the process much easier.</p>
+
+<pre><code>etcd:
+  image: gcr.io/google_containers/etcd:2.0.12
+  net: "host"
+  command: /usr/local/bin/etcd --addr=127.0.0.1:4001 --bind-addr=0.0.0.0:4001 --data-dir=/var/etcd/data
+master:
+  image: gcr.io/google_containers/hyperkube:v1.1.3
+  net: "host"
+  privileged: true
+  pid: "host"
+  volumes:
+    - /:/rootfs:ro
+    - /sys:/sys:ro
+    - /dev:/dev
+    - /var/lib/docker/:/var/lib/docker:ro
+    - /var/lib/kubelet/:/var/lib/kubelet:rw
+    - /var/run:/var/run:rw
+  command: /hyperkube kubelet --containerized --api_servers=http://localhost:8080 --address=0.0.0.0 --hostname_override=127.0.0.1 --config=/etc/kubernetes/manifests
+proxy:
+  image: gcr.io/google_containers/hyperkube:v1.1.3
+  net: "host"
+  privileged: true
+  command: /hyperkube proxy --master=http://127.0.0.1:8080
+</code></pre>
+
+<p>In our example we have three pods. The first pod contains a container with a running etcd. The second container hosts a hyperkube-master, which is responsible for linking the docker containers with each other seemlessly in that way that they connect to themselves automatically. Hence, the volume-options are needed for the hyperkube-master. Finally, the third pod contains the kube-proxy component, which is responsible for load balancing between the service pods that contain a running GALAXY, which we will bring up next.</p>
+
+<p>For launching several instances of a service, kubernetes provides a “Replication Controller” component. This component is also configured with yaml. Please note that in our example, we use the galaxy-image by Björn Grüning.</p>
+
+<pre><code>apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: galaxy-rc
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: galaxy
+    spec:
+      containers:
+      - name: galaxy
+        image: bgruening/galaxy-stable
+        volumeMounts:
+          - name: galaxy-tmp
+            mountPath: "/tmp"
+            readOnly: false
+        ports:
+        - containerPort: 80
+      volumes:
+        - name: galaxy-tmp
+          hostPath:
+            path: "/tmp"
+</code></pre>
+
+<p>The yaml-file should be self-explanatory. The important line is “replicas: 3”, which specifies to kubernetes that it should launch 3 instances of GALAXY.</p>
+
+<p>Next, we configure the kube-proxy component to act as a “Service” for the GALAXY pods:</p>
+
+<pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: galaxy-service
+  labels:
+    app: galaxy
+spec:
+  selector:
+    app: galaxy
+  type: NodePort
+  ports:
+  - port: 9080
+    targetPort: 80
+    protocol: TCP
+  sessionAffinity: ClientIP
+</code></pre>
+
+<p>That’s it. GALAXY can now be reached at port 9080. Kubernetes automatically assigns the users to one of the three GALAXY pods in a round robin fashion.</p>
+
+<p>Further reading: https://github.com/pcm32/k8s_demo</p>
+
+<p>Let’s assume the following scenario: During the day, 10000 people are supposed to work with GALAXY, while during night time only 500 people are supposed to work with GALAXY. During night time, 2 instances of GALAXY would be enough, whereas during day time we want to deploy 10 instances of GALAXY in order to ensure that people can work fluently. With kubernetes, the replication controller does scale-up or scale-down components with the “scale” parameter on the command line.</p>
+
+<p><code>kubectl scale rc galaxy-rc --replicas=10</code></p>
+
+<p>TODO: Testing</p>
+
+<p><code>Kubectl get all</code></p>
+
+<p>TODO: Stopping/Bringing down kubernetes + docker containers</p>
+
+<p>So far, we only have replicated/scaled/deployed instances of GALAXY on one computer node. In the later sections we see how we can scale the instances of GALAXY to several nodes within the local network and deploy them to the cloud.</p>
+
+<h1>Kubernetes: Scaling services to several nodes (multi-host example)</h1>
+
+<p>Aim: deploy services (docker containers) throughout several nodes within a local network infrastructure.</p>
+
+<p>On a multi-host setup, kubernetes differentiates between a master node and several worker nodes. Whereas the master node is responsible for providing the anchorpoint of the kubernetes-network-infrastructure, bootstrapping docker containers and submitting jobs, the worker nodes are only “dumb” nodes that receive instructions from the master, e.g. starting/stopping pods (a.k.a. kubelets).</p>
+
+<p>On a multi-node setup, kubernetes needs an additional component on both master and worker nodes: flanneld, which is responsible for managing network between docker containers on different nodes created by kubernetes in that way that they are able to talk to each other.</p>
+
+<p>Worker nodes are configured minimalistically. They only need a master + proxy component as in the single-node example above + a flannel-component, which is responsible for connecting the worker node to the master node via a virtual network.</p>
+
+<p>Example:
+- 1 master node (which has the etcd, flanneld, kube-proxy, kube-master components)
+- 1 worker node (which has the GALAXY pod + needed flanneld, kubelets)</p>
+
+<h2>Master node</h2>
+
+<p>The master node is responsible for starting and stopping pods, replication controllers, services, as well as submitting jobs. The master node is also responsible for scheduling between the worker nodes. Usually, the master does not have running service pods such as GALAXY.</p>
+
+<p>In our example, the master node has 4 components (a.k.a. pods):
+- etcd: key value storage management, needed for nodes to find each other
+- flanneld: management of network between the nodes, needed for nodes to talk to each other and for worker nodes to receive instructions
+- master: linking pods on the master node together
+- proxy: distribute queries between the worker nodes via kubectl</p>
+
+<p>Please note that in this example, we have to specify an internal IP for the master (in our case 192.168.1.95). Otherwise it won’t work.</p>
+
+<pre><code>etcd:
+  image: gcr.io/google_containers/etcd-amd64:2.2.5
+  net: "host"
+  command: /usr/local/bin/etcd --listen-client-urls=http://0.0.0.0:4001 --advertise-client-urls=http://0.0.0.0:4001 -data-dir=/var/etcd/data
+flannel:
+  image: quay.io/coreos/flannel:0.5.5
+  net: "host"
+  privileged: true
+  volumes:
+    - /dev/net:/dev/net
+  command: /opt/bin/flanneld --ip-masq=true --iface=eth0
+master:
+  image: gcr.io/google_containers/hyperkube-amd64:v1.2.2
+  net: "host"
+  privileged: true
+  pid: "host"
+  volumes:
+    - /:/rootfs:ro
+    - /sys:/sys:ro
+    - /dev:/dev
+    - /var/lib/docker/:/var/lib/docker:ro
+    - /var/lib/kubelet/:/var/lib/kubelet:rw
+    - /var/run:/var/run:rw
+  command: /hyperkube kubelet --containerized --api_servers=http://localhost:8080 --address=0.0.0.0 --allow-privileged=true --enable-server --hostname_override=127.0.0.1 --config=/etc/kubernetes/manifests-multi --cluster-dns=10.0.0.10 --cluster-domain=cluster.local
+proxy:
+  image: gcr.io/google_containers/hyperkube-amd64:v1.2.2
+  net: "host"
+  privileged: true
+  command: /hyperkube proxy --master=http://192.168.1.95:8080
+</code></pre>
+
+<h2>Worker node</h2>
+
+<p>In kubernetes, the worker nodes are designed to be “stupid”. They only receive instructions by the master nodes, e.g. starting and stopping jobs, pods, replication controllers and services.</p>
+
+<p>This concept is a bit confusing at the beginning, but it makes sense in that way that each worker nodes is represented by a physical node.</p>
+
+<p>In our example, the worker node has 3 components:
+- flanneld: needed for communicating with the master node
+- master: needed for linking the pods together on the worker node
+- proxy: needed for kubectl
+Please note that we have to specify (again) the IP of the master node.</p>
+
+<pre><code>flannel:
+  image: quay.io/coreos/flannel:0.5.5
+  net: "host"
+  privileged: true
+  volumes:
+    - /dev/net:/dev/net
+  command: /opt/bin/flanneld --ip-masq=true --etcd-endpoints=http://192.168.1.95:4001 --iface=eth0
+master:
+  image: gcr.io/google_containers/hyperkube-amd64:v1.2.2
+  net: "host"
+  privileged: true
+  pid: "host"
+  volumes:
+    - /:/rootfs:ro
+    - /sys:/sys:ro
+    - /dev:/dev
+    - /var/lib/docker/:/var/lib/docker:ro
+    - /var/lib/kubelet/:/var/lib/kubelet:rw
+    - /var/run:/var/run:rw
+  command: /hyperkube kubelet --containerized --allow-privileged=true --api-servers=http://localhost:8080,http://192.168.1.95:8080 --address=0.0.0.0 --enable-server --cluster-dns=10.0.0.10 --cluster-domain=cluster.local
+proxy:
+  image: gcr.io/google_containers/hyperkube-amd64:v1.2.2
+  net: "host"
+  privileged: true
+  command: /hyperkube proxy --master=http://192.168.1.95:8080
+</code></pre>
+
+<h3>Submitting jobs / Deploying services</h3>
+
+<p>Is very similar as on the single node setup above.</p>
+
+<p>Is being done on the master node!</p>
+
+<p>Example for deploying three instances of GALAXY on the worker node. If there would be three different worker nodes, kubernetes would automatically distribute between the nodes in a round-robin way without the need to configure anything.</p>
+
+<pre><code>apiVersion: v1
+kind: List
+- kind: ReplicationController
+  metadata:
+    name: galaxy-rc
+  spec:
+    replicas: 3
+    template:
+      metadata:
+        labels:
+          app: galaxy
+      spec:
+        containers:
+        - name: galaxy
+          image: bgruening/galaxy-stable
+          volumeMounts:
+            - name: galaxy-tmp
+              mountPath: "/tmp"
+              readOnly: false
+          ports:
+          - containerPort: 80
+        volumes:
+          - name: galaxy-tmp
+            hostPath:
+              path: "/tmp"
+- kind: Service
+  metadata:
+    name: galaxy-service
+    labels:
+      app: galaxy
+  spec:
+    selector:
+      app: galaxy
+    type: NodePort
+    ports:
+    - port: 9080
+      targetPort: 80
+      protocol: TCP
+    sessionAffinity: ClientIP
+</code></pre>
+
+<p>Testing the nodes: You are able to scale the number of pods. They are distributed evenly between the worker nodes.</p>
+
+<p><code>kubectl scale rc galaxy --replicas=6</code></p>
+
+<p>List all pods:</p>
+
+<p><code>kubectl get pods</code></p>
+
+<p>List everything:</p>
+
+<p><code>kubectl get all</code></p>
+
+<h1>Kubernetes: Deploy services to the cloud</h1>
+
+<p>Clouds supported: gcloud (Google), Amazon Cloud, Microsoft, other</p>
+
+<p>http://kubernetes.github.io/docs/getting-started-guides/</p>
+
+<p>TODO</p>

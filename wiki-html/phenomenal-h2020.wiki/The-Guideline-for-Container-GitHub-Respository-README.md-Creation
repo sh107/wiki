@@ -1,0 +1,203 @@
+<h1>The Guideline for Container GitHub Respository README.md Creation</h1>
+
+<h2>Objectives</h2>
+
+<ul>
+<li>To make sure each container Github repository has its own README.md.</li>
+<li>To make sure each container Github repository follows the structure and same style.</li>
+<li>To be able to reuse README.md for [PhenoMeNal App Library] (http://portal.phenomenal-h2020.eu/app-library) without extra inputs.</li>
+</ul>
+
+<h2>Guideline</h2>
+
+<ul>
+<li>Please create the README.md in your container's GitHub Repository root level.</li>
+<li>Strictly follow the specification in the next section.</li>
+<li>For quick start, you can use Example Template in the end of this document.</li>
+</ul>
+
+<h2>Specification</h2>
+
+<ul>
+<li>Logo: The logo needs have the text "Logo" inside the square bracket place holder to be recognized at the App Library. Example:</li>
+</ul>
+
+<pre><code>![Logo](rNMR_logo.gif)
+</code></pre>
+
+<ul>
+<li>Tool name: First single hashtag (#) on the ReadMe.md file will be taken as tool name. Example:</li>
+</ul>
+
+<pre><code># rNMR
+</code></pre>
+
+<ul>
+<li>Version: Should always go after the first hastag and before the second hastag. The line needs to respond to the regexp "^Version: (.+)" being the first group the actual version. This is the version of the tool being containerised. Example:</li>
+</ul>
+
+<pre><code>Version: 1.0.0
+</code></pre>
+
+<h2>Fields</h2>
+
+<p>For the App Library, the following fields will be parsed. Examples:</p>
+
+<ul>
+<li>Short Description
+This should only be 20 words or less, hopefully a single sentence.</li>
+</ul>
+
+<pre><code>## Short description
+
+Super tool, produces unbelievably exact results even with noisy data.
+</code></pre>
+
+<ul>
+<li>Description
+You can put the tool's paper abstract, or any other description into this section, there is no word limit.</li>
+</ul>
+
+<pre><code>### Description
+For a long time, the field of bioinformatics have longed a tool that can deal with data noise while still producing very exact results. Here we present Super tool.... a paragraph of text or so...
+</code></pre>
+
+<ul>
+<li>Key features
+This section provides a list of features about this app. 
+Please add "-" at the front of each feature. 
+Otherwise, README.md will not be parsed properly. Example:</li>
+</ul>
+
+<pre><code>## Key features
+- NMR Processing
+- MS
+</code></pre>
+
+<ul>
+<li>Functionality
+Please select suitable category from https://docs.google.com/document/d/1TRhBu<em>APl1BI1sp5fsAnwkKt39877PBsrLOUlm</em>UsxY
+Please add "-" at the front of each item. 
+"/" is as the indication for a child node in a tree. Example:</li>
+</ul>
+
+<pre><code>## Functionality
+- Annotation / NMR
+- Post-processing
+</code></pre>
+
+<ul>
+<li>Approaches
+Please select suitable category from https://docs.google.com/document/d/1TRhBu<em>APl1BI1sp5fsAnwkKt39877PBsrLOUlm</em>UsxY
+Please add "-" at the front of each item. 
+"/" is as the indication for a child node in a tree.</li>
+</ul>
+
+<pre><code>## Approaches
+- Metabolomics / Targeted
+</code></pre>
+
+<ul>
+<li>Instrument Data Types
+Please select suitable category from https://docs.google.com/document/d/1TRhBu<em>APl1BI1sp5fsAnwkKt39877PBsrLOUlm</em>UsxY
+Please add "-" at the front of each item. 
+"/" is as the indication for a child node in a tree.</li>
+</ul>
+
+<pre><code>## Instrument Data Types
+- NMR / 1D NMR
+- NMR / 2D NMR / 2D TOCSY
+- NMR / 1H NMR
+</code></pre>
+
+<ul>
+<li>Screenshots: 
+The screenshot needs have the text "screenshot" inside the square bracket place holder to be recognized at the App Library.</li>
+</ul>
+
+<pre><code>## Screenshots
+![screenshot](screenshots/s1.gif)
+![screenshot](screenshots/s2.gif)
+</code></pre>
+
+<ul>
+<li>Tool Authors: 
+Please add "-" at the front of each item. Authors or affiliations can be hyperlinked as usual using <code>[Text](http://example.link.org/person)</code> structure, or it can be left unlinked. Example:</li>
+</ul>
+
+<pre><code>## Tool Authors 
+- Ian A. Lewis (University of Calgary)
+- Seth C. Schommer (Wisconsin-Madison University and Sunquest Information Systems)
+- [Author 2](link_to_author_2) (affiliation)
+</code></pre>
+
+<ul>
+<li>Container Contributors: 
+Please add "-" at the front of each item. Again, contributors can be hyperlinked as described for authors, or be left as simple text.</li>
+</ul>
+
+<pre><code>## Container Contributors
+- [Kristian Peters](https://github.com/korseby) (IPB Halle)
+- [Contributor 2](link_to_contributior_2) (affiliation)
+</code></pre>
+
+<ul>
+<li>Website: 
+Please add "-" at the front of each item. Do not explicitly hyperlink please, just leave as text. Example:</li>
+</ul>
+
+<pre><code>## Website
+- http://rnmr.nmrfam.wisc.edu/
+</code></pre>
+
+<ul>
+<li>Git Repository: 
+Please add "-" at the front of each item. Again, do not explicitly hyperlink.</li>
+</ul>
+
+<pre><code>## Git Repository
+- https://github.com/phnmnl/container-rnmr.git
+</code></pre>
+
+<ul>
+<li>Installation: 
+Free text with triple tick code blocks, comprising docker, ipython and galaxy usage.</li>
+</ul>
+
+<pre><code>## Installation 
+
+triple`
+docker pull ...
+triple`
+</code></pre>
+
+<ul>
+<li>Usage Instruction: 
+Free text with triple tick code blocks, comprising docker, ipython and galaxy usage.</li>
+</ul>
+
+<pre><code>## Usage Instructions
+</code></pre>
+
+<ul>
+<li>Publications: 
+Use AMA style publications as a list (you can export AMA from PubMed, on the Formats: Citation link when looking at the entry).
+IMPORTANT! Publication section must be at the end and cannot be empty.</li>
+</ul>
+
+<pre><code>## Publications
+- Lewis IA, Schommer SC, Markley JL. rNMR: open source software for identifying and quantifying metabolites in NMR spectra. Magnetic Resonance in Chemistry . 2009;47(S1):S123-S126. doi:10.1002/mrc.2526.
+</code></pre>
+
+<h2>Point of Contact</h2>
+
+<ul>
+<li>Upon the completion of your container README.md, please send the URL of your container GitHub Repository to <a href="sijin@ebi.ac.uk">Sijin He</a></li>
+<li>Please feel free to contact <a href="sijin@ebi.ac.uk">Sijin He</a> if you have any question regarding the creation of README.md.</li>
+</ul>
+
+<h2>Example Template</h2>
+
+<ul>
+<li>An example template can be found from the README.md of rNMR (https://github.com/phnmnl/container-rnmr/blob/master/README.md)</li>
+</ul>

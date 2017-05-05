@@ -1,0 +1,99 @@
+<p>Within PhenoMeNal we have adopted a versioning strategy for containers and tools which, among other things, mandates how releases need to be performed.  This page summarizes how to follow this procedure to make a new release for your tool.</p>
+
+<p>To begin, you'll need to set specific container labels with the tool and the container versions; you'll also have to use specific branch names in the container's PhenoMeNal GitHub repository. These are explained in the <a href="Dockerfile-Guide">Dockerfile creation guide</a>. </p>
+
+<p>Once you've set the various container labels and your code is organized in the recognized branches, making a new release of your container is simply a matter of 
+merging the current <code>develop</code> branch to the <code>master</code> branch — but don't do this yet! Our CI will then build the new head of the <code>master</code> branch and will tag the new docker image with a release tag that uses the current version. This strategy allows us to discriminate between development builds (stemming from the <code>develop</code> branch, with a <code>dev_</code> prefix on the docker image tag) and release/production builds (stemming from the <code>master</code> branch, with no <code>dev_</code> prefix). In PhenoMeNal we use <code>develop</code> branch for everyday work/coding (and hopefully feature branches that merge to <code>develop</code>) and <code>master</code> for release versions of the containers.</p>
+
+<p>We'll describe this procedure in detail in the text below.</p>
+
+<h2>Pre-requisites for making a release</h2>
+
+<ul>
+<li>The container is adequately versioned and is compliant with the <a href="Dockerfile-Guide">Dockerfile creation guide</a>.
+<ul>
+<li>Among other things, this compliancy means that the git repo has both <code>master</code> and <code>develop</code> branches.</li>
+</ul></li>
+<li>The container has been tested and verified to work correctly (test it with data!). Generally this means that you have configured a test job <a href="http://phenomenal-h2020.eu/jenkins/view/Container%20data%20tests/">here</a> to run the <code>runTest1.sh</code> (or equivalent) script that you provisioned in your container. The relevant Jenkins jobs shouldn't be failing.</li>
+<li>The container works with Galaxy or another workflow runtime environment that we support.</li>
+<li>If the tool is part of a workflow, then the workflow has been tested, at least manually and the tool has been verified to work in that setting.</li>
+</ul>
+
+<h2>Making the release</h2>
+
+<p>Start by <strong>choosing a release name</strong>, which should be the current version tag for your container, without the branch prefix and build number.  For instance, if <a href="http://phenomenal-h2020.eu/jenkins/view/%20A.-%20Container%20tools/job/container-iso2flux/27/">this</a> would the latest development build of my tool which complies with all pre-requisites, then release name should be <code>v0.2_cv1.0</code>; note that we omit the <code>dev_</code> prefix and patch number for the container version (the third number after <code>_cv</code>) as this varies when we commit.</p>
+
+<p>Then, there are basically two ways of making a release — namely, merging the <code>develop</code> branch into <code>master</code>:</p>
+
+<ul>
+<li>Make a <code>git flow</code> release: this is the recommended way, as it will handle the branching pattern for you and create useful tags for later reference.</li>
+<li>Manually merge to <code>master</code>: alternative if you don't want to use git flow, but it might require more manual steps and making sure that <code>develop</code> is completely ready for merging.</li>
+</ul>
+
+<p>Either way, make sure that your local git repository is up-to-date with the remote repository at GitHub, both at the <code>master</code> and <code>develop</code> branches. You can verify this with <code>git remote -v show &lt;origin&gt;</code>.</p>
+
+<p>Output should look like this.
+<code>
+remote origin
+  Fetch URL: https://github.com/phnmnl/container-abcd.git
+  Push  URL: https://github.com/phnmnl/container-abcd.git
+  HEAD branch: master
+  Remote branches:
+    develop tracked
+    master  tracked
+  Local branches configured for 'git pull':
+    develop merges with remote develop
+    master  merges with remote master
+  Local refs configured for 'git push':
+    develop pushes to develop (up to date)
+    master  pushes to master  (up to date)
+</code></p>
+
+<h3>Git flow based release</h3>
+
+<p>The git flow release process is nicely explained diagrammatically <a href="http://danielkummer.github.io/git-flow-cheatsheet/#release">in the git flow cheatsheet</a>. It can be done both through command line calls to <code>git flow</code> or through the many git GUI clients — such as Atlassian SourceTree, Git Kraken and many others. Basically, the idea is that you (1) start a release </p>
+
+<pre><code>git flow release start &lt;release-name&gt;
+</code></pre>
+
+<p>creating a new <code>release/&lt;release-name&gt;</code> branch.  You then make any necessary adjustments on this new branch (e.g., make sure that README.md and container version labels are in sync with the version numbers, make sure that the galaxy wrapper has the correct version on it, etc.), although it might be perfectly normal that you don't need to do any changes. If any, commit the changes. Finally, regardless of whether you made changes or not, finish the release with:</p>
+
+<pre><code>git flow release finish &lt;release-name&gt;
+</code></pre>
+
+<p>This will trigger a merge from the release branch to <code>master</code>, <code>master</code> will be tagged with the <code>&lt;release-name&gt;</code> and the same merge from the release branch will be done to the <code>develop</code> branch. Push the changes to your local <code>master</code> and <code>develop</code> branches to GitHub:</p>
+
+<pre><code>git checkout master
+git push
+git checkout develop
+git push
+</code></pre>
+
+<p>The CI server will see the changes and build a new version from the <code>master</code> branch, with an appropiate tag. </p>
+
+<p>On Atlassian SourceTree, this process can be triggered by using the menus on the GUI:
+* Repository -> Git flow / Hg flow -> Start release
+* Make any changes if needed, commit, and then to finish
+* Repository -> Git flow / Hg flow -> Finish release
+  * GUI might ask if you want to delete the the release branch (say no) and if you want to push straight away (choose no as well). This is to simplify matters if something goes wrong in the process (for instance, merge conflicts with <code>master</code>).
+* Push both <code>master</code> and <code>develop</code> branches.</p>
+
+<h3>Manually</h3>
+
+<p>Supposing that you're standing on the <code>develop</code> branch:</p>
+
+<ul>
+<li>Make any release-specific changes, such as setting version numbers; check that <code>README.md</code> and labels in <code>Dockerfile</code> file are in sync, etc. Commit those changes locally to <code>develop</code>.</li>
+<li>Merge <code>develop</code> into <code>master</code> and push changes: </li>
+</ul>
+
+<pre><code>git checkout master
+git merge --no-ff develop
+git tag -a &lt;release-name&gt;
+git push
+git push --tags
+git checkout develop
+git push
+</code></pre>
+
+<p>Note that on the above commands, we are not using a transitory release branch. You could also use a temporary <code>release/&lt;release-name&gt;</code> branch in this manual approach, but you would need to adapt the steps above: merge from the release branch into both <code>develop</code> and <code>master</code>, push both branches to GitHub, and finally delete that feature branch, if desired.</p>

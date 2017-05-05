@@ -1,0 +1,149 @@
+<h2>Proposal 1: FROM tool_image (build based)</h2>
+
+<p>Tests are written in subsequent Dockerfiles that start <code>FROM tool_image</code>, which is the original image for the tool. Each subsequent Dockerfile contains all the necessary arrangements (additional testing dependencies, pull data, run commands, possibly compare with expected output, or simple call a defined test suite). Testing is done when you do <code>docker build -t tool_test1 Dockerfile.test1</code>, image is deleted upon test completion, CI reports success or failure per test, including build log. Tests are triggered when the docker image building &amp; pushing is successful at the CI, on the “latest” image, as a chained job.</p>
+
+<h3>Example</h3>
+
+<p>Consider a docker image built and tagged as:</p>
+
+<pre><code>docker build -t container-registry.phenomenal-h2020.eu/phnmnl/myapp .
+docker push container-registry.phenomenal-h2020.eu/phnmnl/myapp
+</code></pre>
+
+<p>Then we would have a second image for test 1:</p>
+
+<pre><code>FROM container-registry.phenomenal-h2020.eu/phnmnl/myapp:latest
+MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+
+# We get the data
+RUN wget http://url/to/my/data.test1.tar.gz
+# We run the test command
+RUN exec_myapp -i data.test1.tar.gz
+</code></pre>
+
+<p>A real example of this is available at the <a href="http://phenomenal-h2020.eu/jenkins/view/Tests/job/test-midcor-t1t1/">midcor testing job</a> on the PhenoMeNal Jenkins. Container for that test is available <a href="https://github.com/phnmnl/container-test-midcor/tree/develop">here</a>.</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>The <code>tool_image</code> only keeps  whatever is necessary for the tool and is not augmented in size by any testing dependencies/data.</li>
+<li>You could have even one separate container per unit test if wanted.</li>
+<li>These tests can be naturally chained in any hierarchical way within the CI (although if this hierarchy gets very complicated, this becomes an issue).</li>
+<li>One Test, one Jenkins jobs (so you can make it very granular).</li>
+</ul>
+
+<h3>Cons</h3>
+
+<ul>
+<li>You have one or more additional dockerfiles per tool.</li>
+<li>Test dependency hierarchy could become complicated and require a CI plugin on its own.</li>
+<li>Since these are build processes and not run processes, is difficult to outsource them to a container orchestrator (as you probably want to outsource these builds to some sort of cluster, because they might entails some heavy computation in some cases)</li>
+</ul>
+
+<h2>Proposal 2: Multiple CMDs on a single Dockerfile (build based)</h2>
+
+<p>I found very recently as well that you could use several <code>CMD</code> lines in the dockerfile, and then when it is built, it generates separate images at once (so the first one is the "production" one, and all the subsequents ones are tests). See details <a href="http://blog.terranillius.com/post/docker_testing/">here</a>, on the comment by Dimitri Toubelis from Alkeron Multimedia. He proposes something like:</p>
+
+<pre><code>FROM ubuntu:16.04
+MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+
+# install packages required to run app
+RUN apt-get update &amp;&amp; apt-get install -y \
+    "&lt;app runtime=""&gt; and &lt;dependencies&gt;" \  # add app runtime and required packages
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# copy app files
+COPY app app
+COPY run.sh run.sh
+
+# main app command
+CMD ["run.sh", "&lt;app arguments=""&gt;"]
+
+#--- add tests after this line ---
+
+# install packages required to run tests   
+RUN apt-get update &amp;&amp; apt-get install -y \
+           "&lt;test tools=""&gt; and &lt;dependencies&gt;"    \     # add testing tools and required packages
+           &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+COPY tests tests
+COPY test.sh test.sh
+VOLUME "/var/tests/results"
+
+# main test command
+CMD ["test.sh", "&lt;test arguments=""&gt;"]
+</code></pre>
+
+<h3>Pros</h3>
+
+<ul>
+<li>This avoids having more than a Dockerfile per tool.</li>
+<li>The <code>tool_image</code> only keeps  whatever is necessary for the tool and is not augmented in size by any testing dependencies/data.</li>
+<li>You could have even one separate container per unit test if wanted.</li>
+</ul>
+
+<h3>Cons</h3>
+
+<ul>
+<li>It might complicate things at the CI level as you need to recognise the different images being created and tag them.</li>
+<li>What happens when the first test fails? probably build process stops there and no other tests are not run.</li>
+<li>Lose granularity of the tests probably, as the CI will see them as a single entity.</li>
+</ul>
+
+<h2>Proposal 4: Mixed build-run tests</h2>
+
+<p>This would entail a combination of (proposals 1 or 2) and proposal 3. It means, generate a separate Docker image for the test (through its own Dockerfile, based on the proposal 1; provision data and dependencies), yet execute the test commands itself as a run in the container orchestration.</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>Can be naturally outsourced to the container orchestrator for heavy computation.</li>
+<li>The <code>tool_image</code> only keeps  whatever is necessary for the tool and is not augmented in size by any testing dependencies/data.</li>
+<li>You could have even one separate container per unit test if wanted.</li>
+</ul>
+
+<h3>Cons</h3>
+
+<ul>
+<li>You have one or more additional dockerfiles per tool.</li>
+<li>Test dependency hierarchy could become complicated and require a CI plugin on its own.</li>
+<li>Might require additional effort to add as a job in the CI, specially since we have now both build and run jobs chained.</li>
+</ul>
+
+<h2>Proposal 5: Separate run-tests</h2>
+
+<p>We only have one Dockerfile without any test environment and test data. Thus, we build the docker containers as we would without testing. <strong>However, in github we create a test.sh script alongside where the Dockerfile is located.</strong> The test.sh script contains all the commands needed for running the tests from within the docker. Needed input and output files are supplied via the <code>-v</code> at the commandline when starting the docker alongside the test.sh script which is executed instead of the <code>CMD</code>. For testing, the docker is started with a custom but formalized command.</p>
+
+<h3>Example</h3>
+
+<p><code>docker run -v phnmnl-test:/test-in:ro -v /tmp/phnmnl-test:/test-out:rw -ti phnmnl/msconvert test.sh</code></p>
+
+<p>test.sh
+```</p>
+
+<h1>!/bin/sh</h1>
+
+<p>msconvert -i /test-in/raw-file.bruker -o /test-out/output.mzml --mzml
+if [[ $(cat /test-in/raw-file.check.mzml) != $(cat /test-out/output.mzml) ]]; then
+    echo "test failed"
+    exit 1
+else
+    echo "test ok"
+fi
+```</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>We only have one Dockerfile which does not need any modifications.</li>
+<li>We could have separate test1.sh and test2.sh files for different types of tests.</li>
+<li>We could easily have different tests for integration testing.</li>
+<li>Different test1.sh and test2.sh could be run in parallel.</li>
+</ul>
+
+<h3>Cons</h3>
+
+<ul>
+<li>The docker is being started with a rather lengthy command which could be hard to handle with CI.</li>
+<li>The volumes have to be managed somehow (where are the test-data located and how do we get them to the docker?).</li>
+</ul>

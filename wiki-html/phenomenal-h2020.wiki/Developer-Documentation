@@ -1,0 +1,13 @@
+<ul>
+<li><a href="QuickStart-Installation-for-Local-PhenoMeNal-Workflow">Installation for Local PhenoMeNal Workflow using Galaxy on MiniKube</a></li>
+<li><a href="Uninstallation-of-Local-PhenoMeNal-Workflow">Uninstallation of Local PhenoMeNal Workflow using Galaxy on MiniKube</a></li>
+<li><a href="How-to-make-your-software-tool-available-through-PhenoMeNal">How to make your software tool available through PhenoMeNal</a></li>
+<li><a href="Dockerfile-Guide">Dockerfile creation</a></li>
+<li><a href="Jenkins-Guide">Addition of container to Jenkins</a></li>
+<li><a href="Tool-container-release-process">Container release procedure</a></li>
+<li><a href="Continuous-Integration-in-PhenoMeNal">Continuous Integration of software tools in PhenoMeNal</a></li>
+<li><a href="The-Guideline-for-Container-GitHub-Respository-README.md-Creation">Guideline for Container GitHub Respository README.md Creation</a></li>
+<li><a href="eInfra-requirements-local-systems">e-infrastructure requirements for PhenoMeNal VRE on local systems</a></li>
+<li><a href="galaxy-with-k8s">Using Galaxy with Kubernetes to run containerized tools</a></li>
+<li><a href="Using-Docker">Using Docker</a></li>
+</ul>

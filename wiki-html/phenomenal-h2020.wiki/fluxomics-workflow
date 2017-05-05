@@ -1,0 +1,5 @@
+<h1>Fluxomics tutorial</h1>
+
+<p>The science behind 13C traced MS fluxomics data analyisis is explained on this <a href="https://youtu.be/14I6-xF7AIM">video</a>.</p>
+
+<p>To try the workflow, please download and unzip first this <a href="https://drive.google.com/open?id=0B7S2ZMhdzWwbSVJGMVAtUlE4Qzg">data</a> to your own machine (click on the download button to the upper right of your browser window). Once you have that data unzipped, please follow this video tutorial <a href="https://youtu.be/SaXjdFDfIJU">"Fluxomics workflow demo"</a> from a fresh VRE deployment, which will explain how to use the different pieces of data on the workflow.</p>

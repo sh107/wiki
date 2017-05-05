@@ -1,0 +1,96 @@
+<p>This page will guide you to set up a PhenoNeNal CRE on a local server (bare metal).</p>
+
+<h2>Prerequisites</h2>
+
+<p>There are some tools that you need installed on your local machine, in order to provision Phenomenal-KubeNow:
+- <a href="https:git-scm.com/">Git</a> to clone/download the install scripts from github repo
+- <a href="http://terraform.io/">Vagrant</a> (1.9.1 or higher) to fire-up the virtual machines on the host computer
+- <a href="http://terraform.io">VirtualBox</a> (5.0 or higher) virtual machines provider
+- <a href="http://ansible.com/">Ansible</a> (2.2.0.0 or higher) to provision the VMs (e.g. install and configure networking, reverse proxy etc.)</p>
+
+<h2>Hardware requirements</h2>
+
+<ul>
+<li>You need at least a Intel Core i7 processor with 16GB of memory for a local deployment to be successful.</li>
+</ul>
+
+<h2>Get Phenomenal-KubeNow</h2>
+
+<p>Phenomenal-KubeNow are distributed via <a href="http://github.com">GitHub</a>:</p>
+
+<pre><code># the repository contains submodules therefore `--recursive` parameter when cloning e.g.
+git clone --recursive https://github.com/phnmnl/cloud-deploy-kubenow.git
+
+cd cloud-deploy-kubenow
+</code></pre>
+
+<p><strong>Note:</strong> You might get an error message: <code>fatal: clone of 'git@github.com:EMBL-EBI-TSI/phenomenal-cloudflare.git' into submodule path 'phenomenal-cloudflare' failed</code>. This is because you don't have the access rights to read the private repository containing secret api keys (this is an error you should ignore if you are deploying your local instance of the research environment)</p>
+
+<p>All of the commands in this documentation are meant to be run in the cloud-deploy-kubenow directory.</p>
+
+<h2>Deploy</h2>
+
+<p><strong>Configuration</strong> </p>
+
+<p><em>Cluster</em></p>
+
+<p>In the Vagrantfile please configure the following:</p>
+
+<ul>
+<li><strong><code>cluster_prefix</code></strong>: all your cluster resources will be named with this prefix</li>
+<li><p><strong><code>first_ssh_port</code></strong>: first port number on localhost that will be used for host-machine ssh communication</p></li>
+<li><p><strong><code>master_cpus</code></strong>: number of virtual cpu's for the master ( need to be at least 2)</p></li>
+<li><p><strong><code>master_memory</code></strong>: memory for master node ( need to be at least 2000MB )</p></li>
+<li><p><strong><code>node_count</code></strong>: number of Kubernetes worker nodes to be created</p></li>
+<li><strong><code>node_cpus</code></strong>: number of virtual cpu's for the Kubernetes worker nodes ( need to be at least 3)</li>
+<li><p><strong><code>node_memory</code></strong>: memory for Kubernetes worker nodes ( need to be at least 2000MB )</p></li>
+<li><p><strong><code>node_count</code></strong>: number of edge nodes to be created</p></li>
+<li><strong><code>node_cpus</code></strong>: number of virtual cpu's for the edge nodes ( need to be at least 2)</li>
+<li><p><strong><code>node_memory</code></strong>: memory for edge nodes ( need to be at least 2000MB )</p></li>
+<li><p><strong><code>guest_port_80_forward</code></strong>: cluster http port (80) is forwarded to this port on the local host</p></li>
+</ul>
+
+<p><em>Galaxy &amp; Jupyter</em></p>
+
+<p>In the file deploy_vagrantversion.sh please configure the following:</p>
+
+<ul>
+<li><strong><code>galaxy_admin_email</code></strong>: the local galaxy admin (you?)</li>
+<li><strong><code>galaxy_admin_password</code></strong>: min 6 characters admin password</li>
+<li><strong><code>jupyter_password</code></strong>: password for your notebook</li>
+</ul>
+
+<p><em>/etc/hosts</em> </p>
+
+<p>You need to add the following lines to your <code>/etc/hosts</code> file:</p>
+
+<pre><code>127.0.0.1   notebook.&lt;your-prefix&gt;.local
+127.0.0.1   galaxy.&lt;your-prefix&gt;.local
+127.0.0.1   luigi.&lt;your-prefix&gt;.local
+</code></pre>
+
+<p><strong>Once you are done with your settings you are ready to deploy the cluster:</strong></p>
+
+<pre><code># first create the virtual machines
+vagrant up
+
+# then install and configure phenomenal software on the machines
+./deploy_vagrantversion.sh
+</code></pre>
+
+<p>Or if you want to do it in one go:</p>
+
+<pre><code>vagrant up &amp;&amp; ./deploy_vagrantversion.sh
+</code></pre>
+
+<p>when deployment is finished then you should be able to reach the services at:</p>
+
+<pre><code>Galaxy  = http://galaxy.&lt;your-prefix&gt;.local:8080
+Jupyter = http://notebook.&lt;your-prefix&gt;.local:8080
+Luigi   = http://luigi.&lt;your-prefix&gt;.local:8080
+</code></pre>
+
+<p>and to destroy use:</p>
+
+<pre><code>vagrant destroy --force
+</code></pre>

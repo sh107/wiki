@@ -1,0 +1,126 @@
+<h1>Tutorial for adding tests (type 1)</h1>
+
+<p>On a type 1 test, docker-build based, we will create a secondary container which is based on the container that we want to test. The tests will be executed in the build phase of this secondary container. The main advantage of this is that adding it to a Continous integration server is easy, and since you have already built containers in the past, there is nothing new in terms of complexity. For the sake of this tutorial, we will follow a defined example, the tests required for the <a href="https://github.com/phnmnl/container-midcor/tree/develop">midcor container</a>.</p>
+
+<h2>Create secondary container</h2>
+
+<p>To store this, we create a new repo under <a href="https://github.com/phnmnl">PhenoMeNal GitHub organization</a>, named container-test-midcor for the sake of the example followed here. Name the container-test repo accordingly for your tool.</p>
+
+<p>A natural thing to do here would be to create a secondary container with all the required logic for testing (that is, download test data files and run test):</p>
+
+<pre><code>FROM container-registry.phenomenal-h2020.eu/phnmnl/midcor:latest
+MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+
+# get the data
+RUN wget "https://drive.google.com/uc?export=download&amp;id=0B2e3YmwhK4fkeW1ORld3ZVZ2ZDQ" -O midcor_outin_input.csv
+RUN runMidcor.R -i midcor_outin_input.csv -o output.csv
+# we are currently not testing for the correctness of the run, but at least we know that is running without issues.
+</code></pre>
+
+<p>This would give us the chance as well to obtain the <code>wget</code> tool through <code>apt-get install -y wget</code> if it wasn't available in the original container. This first approach is available at the container-test-midcor repo, on this <a href="https://github.com/phnmnl/container-test-midcor/blob/develop/type1/test1/Dockerfile">Dockerfile</a>. </p>
+
+<p>Please note the directory structure where that Dockerfile is present: </p>
+
+<pre><code>type1/test1/Dockerfile
+</code></pre>
+
+<p>This directory structure is required for our Jenkins job, which we refer to later on in this tutorial. If you want to create a second test of the same type, please create it on <code>type1/test2/Dockerfile</code>.</p>
+
+<p>A better approach, however, would be to include all this logic in the first container, but not execute it, leaving that to the secondary container (included the installation of whatever additional packages are needed).</p>
+
+<h2>Add testing logic to first container</h2>
+
+<p>Originally, the midcor container Dockerfile looked like this:</p>
+
+<pre><code>FROM r-base:3.3.1
+
+MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+
+RUN apt-get -y update &amp;&amp; apt-get -y --allow-downgrades install libssl-dev libcurl4-openssl-dev=7.50.1-1 git libssh2-1-dev
+
+# Add scripts folder to container
+ADD scripts/runMidcor.R /usr/bin/runMidcor.R
+ADD scripts/installMidcor.R installMidcor.R
+
+RUN echo 'options("repos"="http://cran.rstudio.com")' &gt;&gt; /etc/R/Rprofile.site
+RUN Rscript install_midcor.R
+
+# Clean up
+RUN apt-get clean &amp;&amp; apt-get autoremove -y &amp;&amp; rm -rf /var/lib/{apt,dpkg,cache,log}/ /tmp/* /var/tmp/*
+
+RUN chmod +x /usr/bin/runMidcor.R
+# Define Entry point script
+ENTRYPOINT ["runMidcor.R"]
+</code></pre>
+
+<p>After starting a new feature in the original <code>container-midcor</code> git repo through git-flow, named <code>feature/createTest2</code>, we could add the previously shown logic:</p>
+
+<pre><code>wget "https://drive.google.com/uc?export=download&amp;id=0B2e3YmwhK4fkeW1ORld3ZVZ2ZDQ" -O midcor_outin_input.csv
+runMidcor.R -i midcor_outin_input.csv -o output.csv
+</code></pre>
+
+<p>to a bash script <code>runTest1.sh</code>, which we add to the <code>container-midcor</code> git repo (the repo of the original tool container) on the scripts folder, as it has been done on this <a href="https://github.com/phnmnl/container-midcor/commit/1307038499acb8a825afd8ba5efa5bd2381edea1">commit</a>, and then add this file to the Dockerfile on that same original container repo (see <a href="https://github.com/phnmnl/container-midcor/commit/98ff9aa48c665d56c16c7508fee0bf9f196746ad">commit</a>), modifying the original Dockerfile like this:</p>
+
+<pre><code># Add scripts folder to container
+ADD scripts/runMidcor.R /usr/bin/runMidcor.R
+ADD scripts/installMidcor.R installMidcor.R
+# Add test scripts
+ADD scripts/runTest1.sh /usr/bin/runTest1.sh
+RUN chmod +x /usr/bin/runTest1.sh
+</code></pre>
+
+<p>Having added the runTest1.sh to the repo and to the Dockefile, and making sure it works</p>
+
+<pre><code>docker build -t midcor-provisional .
+docker run -it --entrypoint=runTest1.sh midcor-provisional
+</code></pre>
+
+<p>we can close the git-flow feature and merge back to develop.</p>
+
+<p>Please note that the mere addition of the <code>runTest1.sh</code> bash script doesn't imply its execution on the original container, hence none of the data or additionally required packages will be added to the container. Only the text file containing the script will be added, which is negible in terms of size.</p>
+
+<p>From here, our secondary container, stored at the <code>container-test-midcor</code> repo would be simpler:</p>
+
+<pre><code>FROM container-registry.phenomenal-h2020.eu/phnmnl/midcor:latest
+MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+
+# run the test file
+RUN runTest1.sh
+# we are currently not testing for the correctness of the run, but at least we know that is running without issues.
+</code></pre>
+
+<p>The Dockerfile is available <a href="https://github.com/phnmnl/container-test-midcor/blob/1ade5121d7bd734cb1daf8b948dcad9e63f6a4e6/type1/test2/Dockerfile">here</a>. </p>
+
+<h2>Create the test on Jenkins</h2>
+
+<p>For a type 1 test, we create a new Jenkins item (Job) pressing <code>New item</code> to the upper left, giving it an name <code>test-midcor-t1t3</code> (for type 1, test 3) and duplicating item <code>test-template-type1</code>, as shown in the screen shot below.</p>
+
+<p><img src="images/testing-guide/create-job-t1.png" alt="create-job-t1" /></p>
+
+<p>And press OK. Then, in the following screen, change the fields:</p>
+
+<ul>
+<li><code>GitHub Project -&gt; Project URL</code> which has as value <code>https://github.com/phnmnl/container-test-&lt;tool-name&gt;/</code> to reflect the URL of the git repo created for the container test, in this case <code>https://github.com/phnmnl/container-test-midcor</code>:</li>
+</ul>
+
+<p><img src="images/testing-guide/config-job-t1-1.png" alt="config-job-t1-1" /></p>
+
+<ul>
+<li><code>Source code Management -&gt; Git -&gt; Repository URL</code>, to the same container repo URL that we used in the previous step. The red message below should go away.</li>
+</ul>
+
+<p><img src="images/testing-guide/config-job-t1-2.png" alt="config-job-t1-2" /></p>
+
+<ul>
+<li>Check <code>Build Triggers -&gt; Build after other projects are built -&gt; Projects to watch</code> and change it to reflect the name of the build in Jenkins that corresponds to the original tool that we are making the test for. For this example, that would be <code>container-midcor</code>.</li>
+</ul>
+
+<p><img src="images/testing-guide/config-job-t1-3.png" alt="config-job-t1-3" /></p>
+
+<ul>
+<li><code>Build -&gt; Inject environment variables</code> set the three variables to adequate values to your test. In this case, we are creating a third test of type 1 for midcor, so <code>TYPE=1</code>, <code>TESTNO=3</code>, <code>TOOL=midcor</code>. Respecting these conventions is important as it will allow the timely execution of the test without you having to deal with more fields, supposing that you respected the mentioned directory hierarchy <code>typeN/testM/Dockerfile</code>.</li>
+</ul>
+
+<p><img src="images/testing-guide/config-job-t1-4.png" alt="config-job-t1-4" /></p>
+
+<p>Press the button Save at the end. If all is fine, the test should be able run through a build succesfully. The image created for the test will be deleted.</p>
